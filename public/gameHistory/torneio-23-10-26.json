@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "id": "3eda17c2-aa86-4d65-9f26-f0eecbf2c6a8",
+  "name": "Primeiro torneio Digitech Clash",
+  "game": "Clash Royale",
+  "createdAt": "2026-10-23T17:02:20.378Z",
+  "updatedAt": "2026-10-23T19:42:06.118Z",
+  "players": [
+    {
+      "id": "3cfbb395-1d0d-41a2-b017-d34f156ae281",
+      "displayName": "Gabriel",
+      "gameHandle": "biel"
+    },
+    {
+      "id": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+      "displayName": "Samuel",
+      "gameHandle": "Sargento"
+    },
+    {
+      "id": "594caf4a-0e4c-4f68-9b6f-2b78f123b7b9",
+      "displayName": "Miguel",
+      "gameHandle": "Macae"
+    },
+    {
+      "id": "d15b6535-c4a4-48b9-8369-f64b75744dc0",
+      "displayName": "David",
+      "gameHandle": "Golias"
+    },
+    {
+      "id": "54785546-2aac-4697-8e6c-cc3c3c89b658",
+      "displayName": "Matheus",
+      "gameHandle": "Neon"
+    },
+    {
+      "id": "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+      "displayName": "Matheus Carvalho",
+      "gameHandle": "Prof Oak"
+    },
+    {
+      "id": "4e9a3d0c-c1d7-4570-b5c1-7861aabddd6d",
+      "displayName": "Hichard",
+      "gameHandle": "Maozinha"
+    },
+    {
+      "id": "76d05328-e63a-4c7d-8be1-4bc65610607c",
+      "displayName": "Bryan",
+      "gameHandle": "Bs"
+    },
+    {
+      "id": "d9bb5a4e-81b9-4707-a6c0-38980ca0bae5",
+      "displayName": "Alexandre",
+      "gameHandle": "Skill pad"
+    },
+    {
+      "id": "38034b5f-8a12-45b9-817b-fe702b7218fc",
+      "displayName": "Isaque Majela",
+      "gameHandle": "Majela"
+    },
+    {
+      "id": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+      "displayName": "Igor",
+      "gameHandle": "Gold"
+    },
+    {
+      "id": "b8a45d50-cf20-4352-af9c-846d985428c1",
+      "displayName": "Marcos",
+      "gameHandle": "Raze"
+    }
+  ],
+  "stages": [
+    {
+      "id": "8ba67220-4a06-4115-9633-2cede57f32aa",
+      "name": "Eliminação simples",
+      "format": "single-elimination",
+      "bestOf": 3,
+      "status": "in-progress",
+      "rounds": [
+        {
+          "id": "0e8ce862-be1d-4aae-bd4a-601ec6f60a77",
+          "number": 1,
+          "matches": [
+            {
+              "id": "689de234-29ea-4e40-bb64-c3937e10dff0",
+              "playerAId": "76d05328-e63a-4c7d-8be1-4bc65610607c",
+              "playerBId": "d15b6535-c4a4-48b9-8369-f64b75744dc0",
+              "scoreA": 0,
+              "scoreB": 2,
+              "winnerId": "d15b6535-c4a4-48b9-8369-f64b75744dc0",
+              "status": "completed"
+            },
+            {
+              "id": "be0c215b-ddb4-468e-8d75-6af1d2502b0a",
+              "playerAId": "4e9a3d0c-c1d7-4570-b5c1-7861aabddd6d",
+              "playerBId": "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+              "scoreA": 0,
+              "scoreB": 2,
+              "winnerId": "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+              "status": "completed"
+            },
+            {
+              "id": "1f2fba4e-ea01-4e42-a98c-a8e4ec5ad5bd",
+              "playerAId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "playerBId": "d9bb5a4e-81b9-4707-a6c0-38980ca0bae5",
+              "scoreA": 2,
+              "scoreB": 0,
+              "winnerId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "status": "completed"
+            },
+            {
+              "id": "9531577d-879e-4cea-8e1a-9a984df5735d",
+              "playerAId": "3cfbb395-1d0d-41a2-b017-d34f156ae281",
+              "playerBId": "38034b5f-8a12-45b9-817b-fe702b7218fc",
+              "scoreA": 2,
+              "scoreB": 0,
+              "winnerId": "3cfbb395-1d0d-41a2-b017-d34f156ae281",
+              "status": "completed"
+            },
+            {
+              "id": "3b645bd8-1dff-4591-84e2-007eb441a5b8",
+              "playerAId": "594caf4a-0e4c-4f68-9b6f-2b78f123b7b9",
+              "playerBId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "scoreA": 0,
+              "scoreB": 2,
+              "winnerId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "status": "completed"
+            },
+            {
+              "id": "7a4b106b-fd24-4d7e-b657-d43beaf47054",
+              "playerAId": "b8a45d50-cf20-4352-af9c-846d985428c1",
+              "playerBId": "54785546-2aac-4697-8e6c-cc3c3c89b658",
+              "scoreA": 0,
+              "scoreB": 2,
+              "winnerId": "54785546-2aac-4697-8e6c-cc3c3c89b658",
+              "status": "completed"
+            },
+            {
+              "id": "6de4360e-1b49-4a8f-be8f-c8cd92f6cb43",
+              "playerAId": null,
+              "playerBId": null,
+              "scoreA": 0,
+              "scoreB": 0,
+              "winnerId": null,
+              "status": "pending"
+            },
+            {
+              "id": "598cbd4c-2447-47f5-8e81-05aaddb56f2d",
+              "playerAId": null,
+              "playerBId": null,
+              "scoreA": 0,
+              "scoreB": 0,
+              "winnerId": null,
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "5fdafe90-1c03-4f07-893b-05eaed66a75d",
+          "number": 2,
+          "matches": [
+            {
+              "id": "47f3370b-7054-47d6-b2c4-6b304fee9d33",
+              "playerAId": "d15b6535-c4a4-48b9-8369-f64b75744dc0",
+              "playerBId": "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+              "scoreA": 1,
+              "scoreB": 2,
+              "winnerId": "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+              "status": "completed"
+            },
+            {
+              "id": "46ef57fe-c0a8-44b3-8c76-2eb991239ff0",
+              "playerAId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "playerBId": "3cfbb395-1d0d-41a2-b017-d34f156ae281",
+              "scoreA": 2,
+              "scoreB": 1,
+              "winnerId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "status": "completed"
+            },
+            {
+              "id": "42b20010-fe2a-4a67-bb73-0ac1d3818a07",
+              "playerAId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "playerBId": "54785546-2aac-4697-8e6c-cc3c3c89b658",
+              "scoreA": 2,
+              "scoreB": 0,
+              "winnerId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "status": "completed"
+            },
+            {
+              "id": "0ff1a1f0-752f-464a-8013-15e932f936ae",
+              "playerAId": null,
+              "playerBId": null,
+              "scoreA": 0,
+              "scoreB": 0,
+              "winnerId": null,
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "2bc0b38b-1d18-4d33-b10a-320149f71849",
+          "number": 3,
+          "matches": [
+            {
+              "id": "4ffec8e9-1265-49d4-9b3a-fd1aef3a2e7d",
+              "playerAId": "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+              "playerBId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "scoreA": 1,
+              "scoreB": 2,
+              "winnerId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "status": "completed"
+            },
+            {
+              "id": "ecec3f83-428a-4237-922e-4086055fe0c8",
+              "playerAId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "playerBId": null,
+              "scoreA": 0,
+              "scoreB": 0,
+              "winnerId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "status": "bye"
+            }
+          ]
+        },
+        {
+          "id": "afc4ac62-2a2c-44e4-aea4-96bbab2ca5b5",
+          "number": 4,
+          "matches": [
+            {
+              "id": "cd83d5a9-80f9-47ae-80da-1e74cbac0975",
+              "playerAId": "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+              "playerBId": "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+              "scoreA": 0,
+              "scoreB": 0,
+              "winnerId": null,
+              "status": "pending"
+            }
+          ]
+        }
+      ],
+      "totalRounds": 4,
+      "participantIds": [
+        "54785546-2aac-4697-8e6c-cc3c3c89b658",
+        "a1084f76-3fa0-40f6-ac7c-3250cd996bf2",
+        "76d05328-e63a-4c7d-8be1-4bc65610607c",
+        "3cfbb395-1d0d-41a2-b017-d34f156ae281",
+        "4e9a3d0c-c1d7-4570-b5c1-7861aabddd6d",
+        "d9bb5a4e-81b9-4707-a6c0-38980ca0bae5",
+        "594caf4a-0e4c-4f68-9b6f-2b78f123b7b9",
+        "b7b8ae41-0dfa-4851-8b80-836b350a17b1",
+        "d15b6535-c4a4-48b9-8369-f64b75744dc0",
+        "b8a45d50-cf20-4352-af9c-846d985428c1",
+        "87a9be8b-e393-4f51-aa93-49c0ed78be3f",
+        "38034b5f-8a12-45b9-817b-fe702b7218fc"
+      ]
+    }
+  ]
+}

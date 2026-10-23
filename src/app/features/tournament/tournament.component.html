@@ -1,0 +1,39 @@
+<section class="page-heading"><div><p class="eyebrow">CONFIGURAÇÃO</p><h1>Seu torneio, suas regras</h1><p class="muted">Defina o jogo e as etapas. Os formatos estão separados para você configurar a competição desejada.</p></div></section>
+
+<div class="two-column-layout setup-layout">
+  <section class="panel form-panel">
+    <div class="panel-heading"><div><p class="eyebrow">IDENTIDADE</p><h2>Informações básicas</h2></div><span class="step-number">01</span></div>
+    <form (ngSubmit)="saveDetails()">
+      <label for="tournament-name">Nome do torneio</label><input id="tournament-name" name="tournamentName" [(ngModel)]="tournamentName" maxlength="80" required>
+      <label for="game-name">Jogo</label><input id="game-name" name="game" [(ngModel)]="game" maxlength="60" required placeholder="Ex.: Clash Royale">
+      <button class="button button-secondary full-width" type="submit">Salvar informações</button>
+    </form>
+  </section>
+
+  <section class="panel form-panel">
+    <div class="panel-heading"><div><p class="eyebrow">NOVA ETAPA</p><h2>Criar chave</h2></div><span class="step-number">02</span></div>
+    <form (ngSubmit)="createStage()">
+      <label for="format">Formato</label>
+      <select id="format" name="format" [(ngModel)]="format"><option value="swiss">Sistema suíço</option><option value="single-elimination">Eliminação simples</option></select>
+      <div class="field-row">
+        <div><label for="best-of">Formato da partida</label><select id="best-of" name="bestOf" [(ngModel)]="bestOf"><option [ngValue]="3">MD3</option><option [ngValue]="5">MD5</option></select></div>
+        @if (format === 'swiss') { <div><label for="round-count">Rodadas suíças</label><input id="round-count" name="rounds" type="number" min="1" max="20" [(ngModel)]="rounds"></div> }
+      </div>
+      <p class="form-hint">Os participantes são embaralhados para o sorteio inicial. O sistema suíço cria a rodada seguinte após os resultados da atual.</p>
+      <button class="button button-primary full-width" type="submit">Gerar chave <span aria-hidden="true">↗</span></button>
+    </form>
+  </section>
+</div>
+
+<section class="section-heading"><div><p class="eyebrow">ESTRUTURA</p><h2>Etapas criadas</h2></div><span class="count-badge">{{ store.tournament().stages.length }}</span></section>
+@if (store.tournament().stages.length === 0) {
+  <div class="panel compact-empty"><span>⌘</span><p>As etapas e chaves aparecerão aqui.</p></div>
+} @else {
+  <div class="stage-grid">
+    @for (stage of store.tournament().stages; track stage.id) {
+      <article class="panel stage-summary"><div class="stage-title-row"><div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }}</span><h3>{{ stage.name }}</h3></div><button class="icon-button danger" type="button" (click)="removeStage(stage.id)" aria-label="Excluir etapa">×</button></div><p class="muted">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} de {{ stage.totalRounds }} rodada(s)</p>
+        @if (stage.format === 'swiss' && stage.rounds.length < stage.totalRounds) { <button class="button button-secondary" type="button" (click)="nextRound(stage.id)" [disabled]="hasPendingMatches(stage)">Gerar próxima rodada</button> }
+      </article>
+    }
+  </div>
+}

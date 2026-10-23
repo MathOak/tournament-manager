@@ -1,0 +1,32 @@
+<section class="page-heading"><div><p class="eyebrow">CONTROLE DO TORNEIO</p><h1>Painel do administrador</h1><p class="muted">Lance os resultados para atualizar o dashboard e as chaves.</p></div><span class="admin-badge">ADMIN</span></section>
+
+@if (store.tournament().stages.length === 0) {
+  <section class="empty-state"><div class="empty-icon">⌘</div><h2>Nenhuma chave para administrar</h2><p>Cadastre participantes e crie uma etapa para começar.</p><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></section>
+} @else {
+  @for (stage of store.tournament().stages; track stage.id) {
+    <section class="admin-stage">
+      <div class="section-heading"><div><p class="eyebrow">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }} · MD{{ stage.bestOf }}</p><h2>{{ stage.name }}</h2></div><span class="status-pill" [class.status-done]="stage.status === 'completed'">{{ stage.status === 'completed' ? 'Concluída' : 'Em andamento' }}</span></div>
+      @for (round of stage.rounds; track round.id) {
+        <div class="round-admin"><h3>Rodada {{ round.number }}</h3>
+          <div class="admin-match-grid">
+            @for (match of round.matches; track match.id) {
+              <article class="panel admin-match" [class.match-complete]="match.status !== 'pending'">
+                <div class="match-topline"><span>PARTIDA {{ match.id.slice(0, 4).toUpperCase() }}</span><span class="match-state">{{ match.status === 'completed' ? 'Finalizada' : match.status === 'bye' ? 'Bye' : 'Pendente' }}</span></div>
+                @if (match.status === 'bye') {
+                  <div class="bye-result"><strong>{{ playerName(match.winnerId) }}</strong><span>Avança automaticamente</span></div>
+                } @else {
+                  <div class="score-editor">
+                    <label><span>{{ playerName(match.playerAId) }}</span><input type="number" min="0" [max]="stage.bestOf === 3 ? 2 : 3" [(ngModel)]="draft(match).scoreA" [name]="match.id + '-a'" [disabled]="!match.playerAId || !match.playerBId" [attr.aria-label]="'Vitórias de ' + playerName(match.playerAId)"></label>
+                    <span class="score-separator">:</span>
+                    <label><span>{{ playerName(match.playerBId) }}</span><input type="number" min="0" [max]="stage.bestOf === 3 ? 2 : 3" [(ngModel)]="draft(match).scoreB" [name]="match.id + '-b'" [disabled]="!match.playerAId || !match.playerBId" [attr.aria-label]="'Vitórias de ' + playerName(match.playerBId)"></label>
+                  </div>
+                  <div class="match-footer"><span class="muted small">{{ match.status === 'completed' ? 'Resultado pode ser corrigido' : 'MD' + stage.bestOf + ' · informe as vitórias' }}</span><button class="button button-primary button-small" type="button" [disabled]="!match.playerAId || !match.playerBId" (click)="saveResult(stage, round.number, match)">{{ match.status === 'completed' ? 'Salvar correção' : 'Confirmar resultado' }}</button></div>
+                }
+              </article>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  }
+}

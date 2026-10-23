@@ -1,0 +1,32 @@
+<section class="page-heading">
+  <div><p class="eyebrow">PARTICIPANTES</p><h1>Jogadores</h1><p class="muted">Gerencie a lista de participantes do torneio.</p></div>
+  <div class="button-row"><button class="button button-secondary" type="button" (click)="exportTournament()">Exportar JSON</button><label class="button button-secondary file-button">Importar JSON<input type="file" accept="application/json,.json" (change)="importTournament($event)"></label></div>
+</section>
+
+<div class="two-column-layout">
+  <section class="panel form-panel">
+    <div class="panel-heading"><div><p class="eyebrow">NOVO PARTICIPANTE</p><h2>Adicionar jogador</h2></div><span class="step-number">01</span></div>
+    <form (ngSubmit)="addPlayer()">
+      <label for="player-name">Nome de exibição</label>
+      <input id="player-name" name="name" [(ngModel)]="name" required maxlength="60" placeholder="Ex.: Alex" autocomplete="off">
+      <label for="player-handle">Nick no jogo <span class="optional">Opcional</span></label>
+      <input id="player-handle" name="handle" [(ngModel)]="handle" maxlength="60" placeholder="Ex.: Alex#1234" autocomplete="off">
+      <button class="button button-primary full-width" type="submit">Adicionar à lista <span aria-hidden="true">+</span></button>
+    </form>
+    <p class="form-hint">Os nomes precisam ser únicos. O nick pode ser usado para identificar participantes no jogo.</p>
+  </section>
+
+  <section class="panel list-panel">
+    <div class="panel-heading"><div><p class="eyebrow">ELENCO</p><h2>Participantes <span class="count-badge">{{ store.playerCount() }}</span></h2></div></div>
+    @if (store.tournament().players.length === 0) {
+      <div class="compact-empty"><span>♙</span><p>Nenhum jogador cadastrado ainda.</p></div>
+    } @else {
+      <ul class="player-list">
+        @for (player of store.tournament().players; track player.id; let index = $index) {
+          <li class="player-item"><span class="player-avatar">{{ player.displayName.slice(0, 1).toUpperCase() }}</span><span class="player-info"><strong>{{ player.displayName }}</strong><small>{{ player.gameHandle || 'Nick não informado' }}</small></span><span class="player-index">{{ (index + 1).toString().padStart(2, '0') }}</span><button class="icon-button danger" type="button" (click)="removePlayer(player.id)" [attr.aria-label]="'Remover ' + player.displayName">×</button></li>
+        }
+      </ul>
+    }
+  </section>
+</div>
+<section class="panel data-panel"><div><p class="eyebrow">BACKUP E TRANSFERÊNCIA</p><h2>Dados do torneio</h2><p class="muted">O arquivo JSON contém participantes, chaves e resultados. Guarde uma cópia para evitar perda de dados locais.</p></div></section>

@@ -1,0 +1,55 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">VISÃO GERAL</p>
+    <h1>{{ tournament().name }}</h1>
+    <p class="muted">{{ tournament().game }} <span class="dot-separator">•</span> Torneio salvo neste navegador</p>
+  </div>
+  <a class="button button-primary" routerLink="/admin">Atualizar partidas <span aria-hidden="true">→</span></a>
+</section>
+
+<section class="stat-grid" aria-label="Resumo do torneio">
+  <article class="stat-card"><span class="stat-icon violet">♙</span><div><strong>{{ store.playerCount() }}</strong><span>Jogadores</span></div></article>
+  <article class="stat-card"><span class="stat-icon blue">⌘</span><div><strong>{{ tournament().stages.length }}</strong><span>Etapas</span></div></article>
+  <article class="stat-card"><span class="stat-icon green">✓</span><div><strong>{{ completedMatches() }}</strong><span>Partidas encerradas</span></div></article>
+</section>
+
+@if (tournament().stages.length === 0) {
+  <section class="empty-state">
+    <div class="empty-icon">✦</div>
+    <h2>Seu torneio começa aqui</h2>
+    <p>Cadastre jogadores e crie uma chave suíça ou de eliminação simples.</p>
+    <div class="button-row"><a class="button button-secondary" routerLink="/players">Adicionar jogadores</a><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></div>
+  </section>
+} @else {
+  <div class="section-heading"><div><p class="eyebrow">COMPETIÇÃO</p><h2>Etapas do torneio</h2></div><a class="text-link" routerLink="/tournament">Gerenciar etapas →</a></div>
+  <div class="stage-grid">
+    @for (stage of tournament().stages; track stage.id) {
+      <article class="panel stage-card">
+        <div class="stage-title-row">
+          <div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO' }}</span><h3>{{ stage.name }}</h3></div>
+          <span class="status-pill" [class.status-done]="stage.status === 'completed'">{{ stage.status === 'completed' ? 'Concluída' : 'Em andamento' }}</span>
+        </div>
+        <p class="muted small">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} rodada(s)</p>
+        @if (stage.format === 'swiss') {
+          <div class="standings-table">
+            <div class="table-row table-head"><span>Jogador</span><span>J</span><span>Pts</span></div>
+            @for (standing of standings(stage); track standing.player.id; let index = $index) {
+              <div class="table-row"><span><b class="rank">{{ index + 1 }}</b>{{ standing.player.displayName }}</span><span>{{ standing.played }}</span><strong>{{ standing.points }}</strong></div>
+            }
+          </div>
+        }
+        <div class="round-list">
+          @for (round of stage.rounds; track round.id) {
+            <div class="round-heading"><span>Rodada {{ round.number }}</span><span>{{ round.matches.length }} partidas</span></div>
+            @for (match of round.matches; track match.id) {
+              <div class="match-row">
+                <span>{{ playerName(match.playerAId) }} <span class="versus">×</span> {{ playerName(match.playerBId) }}</span>
+                <strong>{{ matchLabel(match) }}</strong>
+              </div>
+            }
+          }
+        </div>
+      </article>
+    }
+  </div>
+}

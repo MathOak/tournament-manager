@@ -1,59 +1,37 @@
-# TournamentManager
+# Tournament Manager
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.11.
+Aplicação frontend Angular para organizar torneios de diferentes jogos, cadastrar jogadores, gerar etapas suíças ou de eliminação simples e acompanhar partidas MD3/MD5.
 
-## Development server
+## Requisitos
 
-To start a local development server, run:
+- Node.js compatível com a versão do Angular CLI instalada.
+- npm 11 (versão registrada no `package.json`).
 
-```bash
-ng serve
-```
+## Desenvolvimento
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Na raiz do projeto:
 
-## Code scaffolding
+- `npm ci` instala as dependências do lockfile.
+- `npm start` inicia o servidor Angular, normalmente em `http://localhost:4200`.
+- `npm run build` gera o build de produção em `dist/`.
+- `npm test` executa os testes unitários via Vitest.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Fluxo do MVP
 
-```bash
-ng generate component component-name
-```
+1. Em **Jogadores**, cadastre os participantes e, opcionalmente, o nick no jogo.
+2. Em **Torneio**, escolha nome, jogo, formato da etapa e MD3 ou MD5. A chave recebe um embaralhamento aleatório dos participantes.
+3. Em **Admin**, registre o placar de cada partida. MD3 exige 2 vitórias e MD5 exige 3.
+4. Em **Dashboard**, acompanhe as chaves, rodadas e classificação do sistema suíço.
+5. Use **Exportar JSON** e **Importar JSON** na página de jogadores para fazer backup ou transferir os dados.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+As etapas suíça e eliminatória são independentes nesta primeira versão: não há avanço automático dos classificados de uma para outra. O pareamento suíço evita revanche quando encontra alternativa, atribui 1 ponto por vitória/bye e permite configurar o número de rodadas.
 
-```bash
-ng generate --help
-```
+## Persistência e sincronização
 
-## Building
+Os dados são persistidos localmente no navegador (IndexedDB, com cópia de fallback em localStorage). As telas na mesma aplicação e abas no mesmo navegador recebem atualizações reativas. Importação/exportação usa JSON versionado (`schemaVersion: 1`). Faça backups periódicos: limpar os dados do navegador pode remover o torneio.
 
-To build the project run:
+O frontend não fornece sincronização entre dispositivos ou usuários e a tela Admin não tem autenticação. Não use esta versão como controle seguro para um torneio remoto/multiusuário. Para isso, será necessário backend com autenticação, autorização e persistência compartilhada.
 
-```bash
-ng build
-```
+## Stack
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Angular 21 standalone, TypeScript estrito, Angular Router, Signals, Tailwind CSS 4 e Vitest.

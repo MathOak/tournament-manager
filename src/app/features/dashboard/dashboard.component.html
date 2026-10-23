@@ -1,55 +1,78 @@
-<section class="page-heading">
-  <div>
-    <p class="eyebrow">VISÃO GERAL</p>
-    <h1>{{ tournament().name }}</h1>
-    <p class="muted">{{ tournament().game }} <span class="dot-separator">•</span> Torneio salvo neste navegador</p>
+<section class="dashboard-head" [class.display-head]="isDisplayMode">
+  <div class="event-brand"><span class="event-emblem">TM</span><div><p class="eyebrow">{{ tournament().game }} · TORNEIO AO VIVO</p><h1>{{ tournament().name }}</h1><p class="muted">{{ tournament().players.length }} jogadores <span class="dot-separator">•</span> {{ completedSeries() }} séries concluídas</p></div></div>
+  <div class="dashboard-actions">
+    @if (isDisplayMode) { <button class="button button-glass" type="button" (click)="requestFullscreen()">⛶ Tela cheia</button><a class="button button-glass" routerLink="/">Sair do telão</a> }
+    @else { <a class="button button-secondary" routerLink="/display">⛶ Modo telão</a><a class="button button-primary" routerLink="/admin">Painel admin <span aria-hidden="true">→</span></a> }
   </div>
-  <a class="button button-primary" routerLink="/admin">Atualizar partidas <span aria-hidden="true">→</span></a>
-</section>
-
-<section class="stat-grid" aria-label="Resumo do torneio">
-  <article class="stat-card"><span class="stat-icon violet">♙</span><div><strong>{{ store.playerCount() }}</strong><span>Jogadores</span></div></article>
-  <article class="stat-card"><span class="stat-icon blue">⌘</span><div><strong>{{ tournament().stages.length }}</strong><span>Etapas</span></div></article>
-  <article class="stat-card"><span class="stat-icon green">✓</span><div><strong>{{ completedMatches() }}</strong><span>Partidas encerradas</span></div></article>
 </section>
 
 @if (tournament().stages.length === 0) {
-  <section class="empty-state">
-    <div class="empty-icon">✦</div>
-    <h2>Seu torneio começa aqui</h2>
-    <p>Cadastre jogadores e crie uma chave suíça ou de eliminação simples.</p>
-    <div class="button-row"><a class="button button-secondary" routerLink="/players">Adicionar jogadores</a><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></div>
-  </section>
+  <section class="empty-state"><div class="empty-icon">✦</div><h2>O torneio ainda não começou</h2><p>Cadastre jogadores e prepare a primeira etapa para exibir a competição aqui.</p><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></section>
 } @else {
-  <div class="section-heading"><div><p class="eyebrow">COMPETIÇÃO</p><h2>Etapas do torneio</h2></div><a class="text-link" routerLink="/tournament">Gerenciar etapas →</a></div>
-  <div class="stage-grid">
-    @for (stage of tournament().stages; track stage.id) {
-      <article class="panel stage-card">
-        <div class="stage-title-row">
-          <div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO' }}</span><h3>{{ stage.name }}</h3></div>
-          <span class="status-pill" [class.status-done]="stage.status === 'completed'">{{ stage.status === 'completed' ? 'Concluída' : 'Em andamento' }}</span>
-        </div>
-        <p class="muted small">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} rodada(s)</p>
-        @if (stage.format === 'swiss') {
-          <div class="standings-table">
-            <div class="table-row table-head"><span>Jogador</span><span>J</span><span>Pts</span></div>
-            @for (standing of standings(stage); track standing.player.id; let index = $index) {
-              <div class="table-row"><span><b class="rank">{{ index + 1 }}</b>{{ standing.player.displayName }}</span><span>{{ standing.played }}</span><strong>{{ standing.points }}</strong></div>
+  <section class="live-section" aria-labelledby="live-heading">
+    <div class="live-section-heading"><div><p class="eyebrow">ACOMPANHAMENTO EM TEMPO REAL</p><h2 id="live-heading">{{ liveMatches().length ? 'Partidas ao vivo' : nextMatches().length ? 'Próximas partidas' : 'Resultados recentes' }}</h2></div><span class="live-label"><i></i>{{ liveMatches().length ? 'AO VIVO' : 'TORNEIO' }}</span></div>
+    @if (liveMatches().length) {
+      <div class="featured-matches">
+        @for (entry of liveMatches(); track entry.match.id) {
+          <article class="live-match-card is-live">
+            <div class="live-card-meta"><span class="live-chip"><i></i> AO VIVO</span><span>{{ entry.stage.name }} · {{ roundLabel(entry.round) }} · MD{{ entry.stage.bestOf }}</span></div>
+            <div class="versus-board">
+              <div class="contestant contestant-a"><span class="contestant-record">{{ record(entry.match.playerAId)?.wins ?? 0 }}V – {{ record(entry.match.playerAId)?.losses ?? 0 }}D</span><strong>{{ playerName(entry.match.playerAId) }}</strong><small>RETROSPECTO NO TORNEIO</small></div>
+              <div class="series-score"><strong>{{ entry.match.scoreA }}</strong><span>:</span><strong>{{ entry.match.scoreB }}</strong><small>SÉRIE MD{{ entry.stage.bestOf }}</small></div>
+              <div class="contestant contestant-b"><span class="contestant-record">{{ record(entry.match.playerBId)?.wins ?? 0 }}V – {{ record(entry.match.playerBId)?.losses ?? 0 }}D</span><strong>{{ playerName(entry.match.playerBId) }}</strong><small>RETROSPECTO NO TORNEIO</small></div>
+            </div>
+          </article>
+        }
+      </div>
+    } @else if (nextMatches().length) {
+      <div class="featured-matches upcoming-grid">
+        @for (entry of nextMatches(); track entry.match.id) {
+          <article class="live-match-card upcoming-card"><div class="live-card-meta"><span class="upcoming-chip">PRÓXIMA</span><span>{{ entry.stage.name }} · {{ roundLabel(entry.round) }} · MD{{ entry.stage.bestOf }}</span></div><div class="upcoming-contestants"><strong>{{ playerName(entry.match.playerAId) }}</strong><span>VS</span><strong>{{ playerName(entry.match.playerBId) }}</strong></div><div class="upcoming-records"><span>{{ record(entry.match.playerAId)?.wins ?? 0 }}V–{{ record(entry.match.playerAId)?.losses ?? 0 }}D</span><span>{{ record(entry.match.playerBId)?.wins ?? 0 }}V–{{ record(entry.match.playerBId)?.losses ?? 0 }}D</span></div></article>
+        }
+      </div>
+    } @else {
+      <div class="no-live-state"><span>✓</span><p>Não há partidas pendentes ou em andamento.</p></div>
+    }
+  </section>
+
+  <section class="stat-grid" aria-label="Resumo do torneio">
+    <article class="stat-card"><span class="stat-icon violet">♙</span><div><strong>{{ store.playerCount() }}</strong><span>Jogadores</span></div></article>
+    <article class="stat-card"><span class="stat-icon blue">◷</span><div><strong>{{ liveMatches().length }}</strong><span>Ao vivo</span></div></article>
+    <article class="stat-card"><span class="stat-icon green">✓</span><div><strong>{{ completedSeries() }}</strong><span>Séries concluídas</span></div></article>
+  </section>
+
+  <section class="competition-section">
+    <div class="section-heading"><div><p class="eyebrow">CHAVES E CLASSIFICAÇÃO</p><h2>Etapas do torneio</h2></div>@if (!isDisplayMode) { <a class="text-link" routerLink="/tournament">Gerenciar etapas →</a> }</div>
+    <div class="stage-grid">
+      @for (stage of tournament().stages; track stage.id) {
+        <article class="panel stage-card">
+          <div class="stage-title-row"><div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }}</span><h3>{{ stage.name }}</h3></div><span class="status-pill" [class.status-done]="stage.status === 'completed'">{{ stage.status === 'completed' ? 'Concluída' : 'Em andamento' }}</span></div>
+          @if (stage.sourceStageId) { <p class="stage-origin">Classificados do suíço <span>·</span> Seeds {{ stage.seedMode === 'standings' ? 'por classificação' : stage.seedMode === 'manual' ? 'manuais' : 'sorteados' }}</p> }
+          <p class="muted small">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} rodada(s)</p>
+          @if (stage.format === 'swiss') {
+            <div class="standings-table"><div class="table-row table-head"><span>Jogador · campanha</span><span>J</span><span>Pts</span></div>
+              @for (standing of standings(stage); track standing.player.id; let index = $index) {
+                <div class="table-row"><span><b class="rank">{{ index + 1 }}</b>{{ standing.player.displayName }} <small class="record-inline">{{ record(standing.player.id)?.wins ?? 0 }}V–{{ record(standing.player.id)?.losses ?? 0 }}D</small></span><span>{{ standing.played }}</span><strong>{{ standing.points }}</strong></div>
+              }
+            </div>
+          }
+          <div class="bracket-grid" [class.single-round]="stage.rounds.length === 1">
+            @for (round of stage.rounds; track round.id) {
+              <section class="bracket-round"><h4>{{ roundLabel(round) }}</h4>
+                @for (match of round.matches; track match.id) {
+                  <div class="bracket-match" [class.bracket-live]="match.status === 'in-progress'" [class.bracket-finished]="match.status === 'completed' || match.status === 'bye'">
+                    <div class="bracket-player" [class.bracket-winner]="match.winnerId === match.playerAId && match.status !== 'pending'"><span>{{ playerName(match.playerAId) }}</span><b>{{ match.scoreA }}</b></div>
+                    <div class="bracket-player" [class.bracket-winner]="match.winnerId === match.playerBId && match.status !== 'pending'"><span>{{ playerName(match.playerBId) }}</span><b>{{ match.scoreB }}</b></div>
+                    @if (match.status === 'in-progress') { <small class="bracket-state">AO VIVO</small> }
+                    @else if (match.status === 'bye') { <small class="bracket-state">BYE · AVANÇA</small> }
+                  </div>
+                }
+              </section>
             }
           </div>
-        }
-        <div class="round-list">
-          @for (round of stage.rounds; track round.id) {
-            <div class="round-heading"><span>Rodada {{ round.number }}</span><span>{{ round.matches.length }} partidas</span></div>
-            @for (match of round.matches; track match.id) {
-              <div class="match-row">
-                <span>{{ playerName(match.playerAId) }} <span class="versus">×</span> {{ playerName(match.playerBId) }}</span>
-                <strong>{{ matchLabel(match) }}</strong>
-              </div>
-            }
-          }
-        </div>
-      </article>
-    }
-  </div>
+        </article>
+      }
+    </div>
+  </section>
+  <p class="local-sync-note"><i></i> Atualização local ativa · dados sincronizados neste navegador</p>
 }

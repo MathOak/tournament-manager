@@ -37,3 +37,36 @@
     }
   </div>
 }
+
+@if (completedSwissStages.length) {
+  <section class="qualification-panel panel">
+    <div class="panel-heading"><div><p class="eyebrow">PRÓXIMA FASE</p><h2>Classificar para eliminatória</h2><p class="muted">A fase suíça permanece salva; esta ação cria uma nova etapa com os participantes escolhidos.</p></div><span class="step-number">03</span></div>
+    <div class="qualification-controls">
+      <label for="source-swiss">Fase suíça<select id="source-swiss" [ngModel]="sourceSwiss?.id ?? ''" (ngModelChange)="onSourceStageChange($event)"><option value="">Selecione a etapa</option>@for (stage of completedSwissStages; track stage.id) { <option [value]="stage.id">{{ stage.name }}</option> }</select></label>
+      <label for="top-count">Classificar entre<select id="top-count" [ngModel]="topCount" (ngModelChange)="topCount = +$event; selectTopClassified()"><option [ngValue]="2">Top 2</option><option [ngValue]="4">Top 4</option><option [ngValue]="8">Top 8</option><option [ngValue]="16">Top 16</option></select></label>
+      <label for="qualifier-bestof">Formato das partidas<select id="qualifier-bestof" [(ngModel)]="qualificationBestOf"><option [ngValue]="3">MD3</option><option [ngValue]="5">MD5</option></select></label>
+      <label for="seed-method">Distribuição dos seeds<select id="seed-method" [(ngModel)]="seedMode"><option value="standings">Seguir classificação suíça</option><option value="random">Sortear classificados</option><option value="manual">Ajustar ordem manualmente</option></select></label>
+    </div>
+    @if (sourceSwiss) {
+      @if (selectedBoundaryTie) { <div class="tie-notice" role="note"><strong>Empate no corte de classificação.</strong><span>Revise os participantes selecionados e confirme manualmente quem avança.</span><label class="confirm-tie"><input type="checkbox" [(ngModel)]="tieDecisionConfirmed"> Confirmo esta seleção de classificados</label></div> }
+      <div class="qualifier-list"><div class="qualifier-heading"><span>PARTICIPANTE</span><span>V–D · PTS</span><span>AVANÇA</span></div>
+        @for (standing of swissStandings; track standing.player.id; let index = $index) {
+          <div class="qualifier-row"><span class="qualifier-name"><b class="rank">{{ index + 1 }}</b>{{ standing.player.displayName }}</span><span class="qualifier-record">{{ record(standing.player.id)?.wins ?? 0 }}V–{{ record(standing.player.id)?.losses ?? 0 }}D · {{ standing.points }} pts</span><label class="switch-label"><input type="checkbox" [checked]="qualifiedIds.includes(standing.player.id)" (change)="toggleQualified(standing.player.id, $any($event.target).checked)" [attr.aria-label]="'Classificar ' + standing.player.displayName"></label></div>
+        }
+      </div>
+      @if (seedMode === 'manual') {
+        <div class="seed-editor"><p class="eyebrow">ORDEM DOS SEEDS · USE OS BOTÕES PARA REORDENAR</p>
+          @for (playerId of manualSeedIds; track playerId; let index = $index) { <div class="seed-row"><b>{{ index + 1 }}</b><span>{{ playerName(playerId) }}</span><button type="button" class="icon-button" (click)="moveSeed(playerId, -1)" [disabled]="index === 0" [attr.aria-label]="'Mover ' + playerName(playerId) + ' para cima'">↑</button><button type="button" class="icon-button" (click)="moveSeed(playerId, 1)" [disabled]="index === manualSeedIds.length - 1" [attr.aria-label]="'Mover ' + playerName(playerId) + ' para baixo'">↓</button></div> }
+        </div>
+      }
+      <div class="qualification-footer"><span class="muted small">{{ qualifiedIds.length }} classificados selecionados · confira a escolha antes de gerar</span><button class="button button-primary" type="button" (click)="createElimination()" [disabled]="qualifiedIds.length < 2 || (selectedBoundaryTie && !tieDecisionConfirmed)">{{ previewOpen ? 'Confirmar e criar eliminatória' : 'Pré-visualizar confrontos →' }}</button></div>
+      @if (previewOpen) {
+        <section class="bracket-preview" aria-label="Prévia dos confrontos da primeira rodada">
+          <div class="preview-heading"><div><p class="eyebrow">REVISÃO FINAL</p><h3>Primeira rodada · MD{{ qualificationBestOf }}</h3><p class="muted small">Sementes: {{ seedMode === 'standings' ? 'classificação suíça' : seedMode === 'manual' ? 'ordem manual' : 'sorteio' }}</p></div><button type="button" class="button button-secondary button-small" (click)="cancelPreview()">Voltar e ajustar</button></div>
+          <div class="preview-matchups">@for (matchup of previewMatchups; track matchup.seedA + '-' + matchup.seedB) { <div class="preview-match"><span><b>{{ matchup.seedA }}</b>{{ matchup.playerA }}</span><i>VS</i><span><b>{{ matchup.seedB }}</b>{{ matchup.playerB }}</span></div> }</div>
+          <p class="form-hint">Ao confirmar, a etapa suíça não será alterada. A nova chave começará com estes confrontos.</p>
+        </section>
+      }
+    }
+  </section>
+}

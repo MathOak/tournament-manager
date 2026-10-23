@@ -1,9 +1,17 @@
-import { BestOf, Match, Player, Round, Stage, StageFormat, createId } from './tournament.model';
+import { BestOf, Match, Player, Round, SeedMode, Stage, StageFormat, Tournament, createId } from './tournament.model';
 
 export interface MatchResult {
   winnerId: string;
   scoreA: number;
   scoreB: number;
+}
+
+export interface PlayerTournamentRecord {
+  player: Player;
+  wins: number;
+  losses: number;
+  seriesWins: number;
+  seriesLosses: number;
 }
 
 export function validateMatchResult(
@@ -36,8 +44,12 @@ export function createStage(
   bestOf: BestOf,
   totalRounds: number,
   name = format === 'swiss' ? 'Sistema suíço' : 'Eliminação simples',
+  options: { seedOrder?: string[]; sourceStageId?: string; seedMode?: SeedMode } = {},
 ): Stage {
-  const participants = shuffle(players);
+  const orderedPlayers = options.seedOrder
+    ? options.seedOrder.map((id) => players.find((player) => player.id === id)).filter((player): player is Player => !!player)
+    : players.slice();
+  const participants = format === 'single-elimination' && options.seedOrder ? orderedPlayers : shuffle(orderedPlayers);
   const stage: Stage = {
     id: createId(),
     name,
@@ -46,12 +58,15 @@ export function createStage(
     status: 'in-progress',
     rounds: [],
     totalRounds: format === 'swiss' ? Math.max(1, totalRounds) : bracketRoundCount(participants.length),
+    participantIds: participants.map((player) => player.id),
+    ...(options.sourceStageId ? { sourceStageId: options.sourceStageId } : {}),
+    ...(options.seedMode ? { seedMode: options.seedMode } : {}),
   };
 
   if (format === 'swiss') {
     stage.rounds = [createSwissRound(participants, 1, new Map(), new Set())];
   } else {
-    stage.rounds = createEliminationRounds(participants);
+    stage.rounds = createEliminationRounds(participants, !!options.seedOrder);
     resolveByes(stage);
   }
 
@@ -108,6 +123,54 @@ export function calculateStandings(stage: Stage, players: Player[]): Array<{ pla
   return players
     .map((player) => ({ player, points: points.get(player.id) ?? 0, played: played.get(player.id) ?? 0 }))
     .sort((a, b) => b.points - a.points || a.player.displayName.localeCompare(b.player.displayName));
+}
+
+export function calculateTournamentRecords(tournament: Tournament): PlayerTournamentRecord[] {
+  const records = new Map(tournament.players.map((player) => [player.id, {
+    player,
+    wins: 0,
+    losses: 0,
+    seriesWins: 0,
+    seriesLosses: 0,
+  }]));
+  for (const stage of tournament.stages) {
+    for (const round of stage.rounds) {
+      for (const match of round.matches) {
+        if (match.status !== 'completed' || !match.playerAId || !match.playerBId || !match.winnerId) continue;
+        const playerA = records.get(match.playerAId);
+        const playerB = records.get(match.playerBId);
+        if (!playerA || !playerB) continue;
+        playerA.seriesWins += match.scoreA;
+        playerA.seriesLosses += match.scoreB;
+        playerB.seriesWins += match.scoreB;
+        playerB.seriesLosses += match.scoreA;
+        const winner = records.get(match.winnerId);
+        const loser = records.get(match.winnerId === match.playerAId ? match.playerBId : match.playerAId);
+        if (winner && loser) {
+          winner.wins += 1;
+          loser.losses += 1;
+        }
+      }
+    }
+  }
+  return [...records.values()].sort((a, b) => b.wins - a.wins || a.losses - b.losses || a.player.displayName.localeCompare(b.player.displayName));
+}
+
+export function validateMatchProgress(match: Match, bestOf: BestOf, scoreA: number, scoreB: number): boolean {
+  const target = bestOf === 3 ? 2 : 3;
+  return match.playerAId !== null && match.playerBId !== null &&
+    Number.isInteger(scoreA) && Number.isInteger(scoreB) && scoreA >= 0 && scoreB >= 0 &&
+    scoreA + scoreB > 0 &&
+    scoreA <= target && scoreB <= target && !(scoreA === target && scoreB === target) &&
+    Math.max(scoreA, scoreB) < target;
+}
+
+export function applyMatchProgress(stage: Stage, roundNumber: number, matchId: string, scoreA: number, scoreB: number): Stage {
+  const rounds = stage.rounds.map((round) => ({ ...round, matches: round.matches.map((match) => ({ ...match })) }));
+  const match = rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+  if (!match || match.status === 'bye') return stage;
+  Object.assign(match, { scoreA, scoreB, winnerId: null, status: 'in-progress' as const });
+  return { ...stage, rounds, status: 'in-progress' };
 }
 
 export function applyMatchResult(stage: Stage, roundNumber: number, matchId: string, result: MatchResult): Stage {
@@ -186,15 +249,16 @@ function pairSwiss(
   return { id: createId(), number: roundNumber, matches };
 }
 
-function createEliminationRounds(players: Player[]): Round[] {
+function createEliminationRounds(players: Player[], useSeeds: boolean): Round[] {
   if (players.length < 2) return [];
   const size = 2 ** bracketRoundCount(players.length);
   const rounds: Round[] = [];
+  const slots = useSeeds ? arrangeBySeed(players, size) : shuffle(players);
   const firstRound: Round = {
     id: createId(),
     number: 1,
     matches: Array.from({ length: size / 2 }, (_, index) =>
-      makeMatch(players[index * 2]?.id ?? null, players[index * 2 + 1]?.id ?? null),
+      makeMatch(slots[index * 2]?.id ?? null, slots[index * 2 + 1]?.id ?? null),
     ),
   };
   rounds.push(firstRound);
@@ -228,15 +292,28 @@ function propagateWinner(stage: Stage, roundNumber: number, matchIndex: number, 
   if (!nextMatch) return;
   if (matchIndex % 2 === 0) nextMatch.playerAId = winnerId;
   else nextMatch.playerBId = winnerId;
-  if (nextMatch.playerAId && !nextMatch.playerBId) {
+  const previousRound = stage.rounds[roundNumber - 1];
+  const siblingFeeder = previousRound?.matches[Math.floor(matchIndex / 2) * 2 + (matchIndex % 2 === 0 ? 1 : 0)];
+  const siblingSlotIsEmpty = !siblingFeeder || (!siblingFeeder.playerAId && !siblingFeeder.playerBId);
+  if (nextMatch.playerAId && !nextMatch.playerBId && siblingSlotIsEmpty) {
     nextMatch.winnerId = nextMatch.playerAId;
     nextMatch.status = 'bye';
     propagateWinner(stage, roundNumber + 1, stage.rounds[roundNumber].matches.indexOf(nextMatch), nextMatch.playerAId);
-  } else if (!nextMatch.playerAId && nextMatch.playerBId) {
+  } else if (!nextMatch.playerAId && nextMatch.playerBId && siblingSlotIsEmpty) {
     nextMatch.winnerId = nextMatch.playerBId;
     nextMatch.status = 'bye';
     propagateWinner(stage, roundNumber + 1, stage.rounds[roundNumber].matches.indexOf(nextMatch), nextMatch.playerBId);
   }
+}
+
+function arrangeBySeed(players: Player[], bracketSize: number): Array<Player | undefined> {
+  let positions = [1, 2];
+  while (positions.length < bracketSize) {
+    const nextSize = positions.length * 2;
+    positions = positions.flatMap((seed) => [seed, nextSize + 1 - seed]);
+  }
+  const bySeed = new Map(players.map((player, index) => [index + 1, player]));
+  return positions.map((seed) => bySeed.get(seed));
 }
 
 function makeMatch(

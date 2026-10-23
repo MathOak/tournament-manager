@@ -1,31 +1,31 @@
-<section class="page-heading"><div><p class="eyebrow">CONTROLE DO TORNEIO</p><h1>Painel do administrador</h1><p class="muted">Lance os resultados para atualizar o dashboard e as chaves.</p></div><span class="admin-badge">ADMIN</span></section>
+<section class="page-heading admin-heading"><div><p class="eyebrow">CENTRAL DE OPERAÇÃO</p><h1>Gerenciar partidas</h1><p class="muted">Atualize placares e confirme resultados. O dashboard acompanha as mudanças automaticamente.</p></div><span class="admin-badge">ADMIN</span></section>
 
 @if (store.tournament().stages.length === 0) {
-  <section class="empty-state"><div class="empty-icon">⌘</div><h2>Nenhuma chave para administrar</h2><p>Cadastre participantes e crie uma etapa para começar.</p><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></section>
-} @else {
-  @for (stage of store.tournament().stages; track stage.id) {
-    <section class="admin-stage">
-      <div class="section-heading"><div><p class="eyebrow">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }} · MD{{ stage.bestOf }}</p><h2>{{ stage.name }}</h2></div><span class="status-pill" [class.status-done]="stage.status === 'completed'">{{ stage.status === 'completed' ? 'Concluída' : 'Em andamento' }}</span></div>
-      @for (round of stage.rounds; track round.id) {
-        <div class="round-admin"><h3>Rodada {{ round.number }}</h3>
-          <div class="admin-match-grid">
-            @for (match of round.matches; track match.id) {
-              <article class="panel admin-match" [class.match-complete]="match.status !== 'pending'">
-                <div class="match-topline"><span>PARTIDA {{ match.id.slice(0, 4).toUpperCase() }}</span><span class="match-state">{{ match.status === 'completed' ? 'Finalizada' : match.status === 'bye' ? 'Bye' : 'Pendente' }}</span></div>
-                @if (match.status === 'bye') {
-                  <div class="bye-result"><strong>{{ playerName(match.winnerId) }}</strong><span>Avança automaticamente</span></div>
-                } @else {
-                  <div class="score-editor">
-                    <label><span>{{ playerName(match.playerAId) }}</span><input type="number" min="0" [max]="stage.bestOf === 3 ? 2 : 3" [(ngModel)]="draft(match).scoreA" [name]="match.id + '-a'" [disabled]="!match.playerAId || !match.playerBId" [attr.aria-label]="'Vitórias de ' + playerName(match.playerAId)"></label>
-                    <span class="score-separator">:</span>
-                    <label><span>{{ playerName(match.playerBId) }}</span><input type="number" min="0" [max]="stage.bestOf === 3 ? 2 : 3" [(ngModel)]="draft(match).scoreB" [name]="match.id + '-b'" [disabled]="!match.playerAId || !match.playerBId" [attr.aria-label]="'Vitórias de ' + playerName(match.playerBId)"></label>
-                  </div>
-                  <div class="match-footer"><span class="muted small">{{ match.status === 'completed' ? 'Resultado pode ser corrigido' : 'MD' + stage.bestOf + ' · informe as vitórias' }}</span><button class="button button-primary button-small" type="button" [disabled]="!match.playerAId || !match.playerBId" (click)="saveResult(stage, round.number, match)">{{ match.status === 'completed' ? 'Salvar correção' : 'Confirmar resultado' }}</button></div>
-                }
-              </article>
-            }
-          </div>
-        </div>
+  <section class="empty-state"><div class="empty-icon">⌘</div><h2>Nenhuma etapa pronta</h2><p>Cadastre participantes e crie uma etapa para iniciar o controle das partidas.</p><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></section>
+} @else if (activeStage(); as stage) {
+  <section class="admin-toolbar panel">
+    <div class="admin-selectors"><label for="admin-stage">Etapa<select id="admin-stage" [ngModel]="stage.id" (ngModelChange)="selectStage($event)"><option [ngValue]="stage.id">{{ stage.name }}</option>@for (other of store.tournament().stages; track other.id) { @if (other.id !== stage.id) { <option [ngValue]="other.id">{{ other.name }}</option> } }</select></label><div class="admin-round-label"><span class="eyebrow">RODADA EM FOCO</span><strong>{{ currentRound() ? 'Rodada ' + currentRound()!.number : 'Sem partidas' }}</strong></div></div>
+    <div class="admin-counters"><span><b>{{ openCount() }}</b> abertas</span><span><b>{{ liveCount() }}</b> ao vivo</span><span><b>{{ completedCount() }}</b> concluídas</span></div>
+  </section>
+  <nav class="round-tabs" aria-label="Selecionar rodada">
+    @for (round of rounds(stage); track round.id) { <button type="button" [class.selected]="(selectedRoundNumber() || currentRound()?.number) === round.number" (click)="selectRound(round.number)">Rodada {{ round.number }}</button> }
+  </nav>
+  @if (currentRound(); as round) {
+    <section class="admin-round-view">
+      <div class="admin-round-title"><div><p class="eyebrow">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }} · MD{{ stage.bestOf }}</p><h2>Rodada {{ round.number }}</h2></div><span class="round-progress">{{ actionableMatches(round).length }} partidas aguardando ação</span></div>
+      @if (actionableMatches(round).length === 0) { <div class="no-live-state"><span>✓</span><p>Todas as partidas desta rodada estão encerradas.</p></div> }
+      <div class="admin-match-grid">
+        @for (match of actionableMatches(round); track match.id) {
+          <article class="panel admin-match" [class.match-live]="match.status === 'in-progress'">
+            <div class="match-topline"><span>PARTIDA {{ match.id.slice(0, 4).toUpperCase() }}</span><span class="match-state">{{ isCorrection(match) ? 'Correção' : match.status === 'in-progress' ? 'Ao vivo' : 'Pendente' }}</span></div>
+            <div class="score-editor"><label><span>{{ playerName(match.playerAId) }}</span><input type="number" min="0" [max]="stage.bestOf === 3 ? 2 : 3" [(ngModel)]="draft(match).scoreA" [name]="match.id + '-a'" [attr.aria-label]="'Vitórias na série de ' + playerName(match.playerAId)"></label><span class="score-separator">:</span><label><span>{{ playerName(match.playerBId) }}</span><input type="number" min="0" [max]="stage.bestOf === 3 ? 2 : 3" [(ngModel)]="draft(match).scoreB" [name]="match.id + '-b'" [attr.aria-label]="'Vitórias na série de ' + playerName(match.playerBId)"></label></div>
+            <p class="score-help">MD{{ stage.bestOf }} · primeira pessoa a {{ stage.bestOf === 3 ? 2 : 3 }} vitórias vence</p>
+            <div class="match-footer">@if (!isCorrection(match)) { <button class="button button-secondary button-small" type="button" (click)="saveProgress(stage, round.number, match)">Salvar placar parcial</button> }<button class="button button-primary button-small" type="button" (click)="saveResult(stage, round.number, match)">{{ isCorrection(match) ? 'Salvar correção' : 'Confirmar resultado' }}</button></div>
+          </article>
+        }
+      </div>
+      @if (completedMatches(round).length) {
+        <details class="completed-history"><summary>Resultados encerrados nesta rodada <span>{{ completedMatches(round).length }}</span></summary><div class="history-list">@for (match of completedMatches(round); track match.id) { <div class="history-row"><span>{{ playerName(match.playerAId) }} <b>{{ match.scoreA }}–{{ match.scoreB }}</b> {{ playerName(match.playerBId) }}</span><span class="history-winner">{{ match.status === 'bye' ? 'Bye' : 'Vencedor: ' + playerName(match.winnerId) }}</span>@if (match.status === 'completed') { <button class="button button-secondary button-small" type="button" (click)="beginCorrection(match)">Corrigir</button> }</div> }</div></details>
       }
     </section>
   }

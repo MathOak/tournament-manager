@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { applyMatchResult, createNextSwissRound, createStage, validateMatchResult } from '../domain/tournament-engine';
-import { BestOf, Player, StageFormat, Tournament, createEmptyTournament, createId } from '../domain/tournament.model';
+import { applyMatchProgress, applyMatchResult, calculateStandings, createNextSwissRound, createStage, validateMatchProgress, validateMatchResult } from '../domain/tournament-engine';
+import { BestOf, Player, SeedMode, StageFormat, Tournament, createEmptyTournament, createId } from '../domain/tournament.model';
 
 const DATABASE_NAME = 'tournament-manager';
 const STORE_NAME = 'documents';
@@ -69,6 +69,39 @@ export class TournamentStore {
     return true;
   }
 
+  createEliminationFromSwiss(sourceStageId: string, selectedIds: string[], seedMode: SeedMode, manualOrder: string[], bestOf: BestOf): boolean {
+    const tournament = this.state();
+    const source = tournament.stages.find((stage) => stage.id === sourceStageId && stage.format === 'swiss');
+    if (!source || source.rounds.length < source.totalRounds || source.rounds.some((round) => round.matches.some((match) => match.status === 'pending' || match.status === 'in-progress'))) {
+      this.notice.set('Conclua todas as rodadas suíças antes de classificar jogadores.');
+      return false;
+    }
+    const eligibleIds = new Set(source.participantIds ?? tournament.players.map((player) => player.id));
+    const qualified = [...new Set(selectedIds)].filter((id) => eligibleIds.has(id)).map((id) => tournament.players.find((player) => player.id === id)).filter((player): player is Player => !!player);
+    if (qualified.length < 2) {
+      this.notice.set('Selecione pelo menos dois classificados para a eliminatória.');
+      return false;
+    }
+    let seedOrder: string[] | undefined;
+    if (seedMode === 'standings') {
+      const standings = calculateStandings(source, tournament.players);
+      seedOrder = standings.map((standing) => standing.player.id).filter((id) => qualified.some((player) => player.id === id));
+    } else if (seedMode === 'manual') {
+      seedOrder = manualOrder.filter((id) => qualified.some((player) => player.id === id));
+      for (const player of qualified) if (!seedOrder.includes(player.id)) seedOrder.push(player.id);
+    } else {
+      seedOrder = manualOrder.filter((id) => qualified.some((player) => player.id === id));
+      for (const player of qualified) if (!seedOrder.includes(player.id)) seedOrder.push(player.id);
+    }
+    const stage = createStage(qualified, 'single-elimination', bestOf, 1, 'Eliminação simples', {
+      ...(seedOrder ? { seedOrder } : {}),
+      sourceStageId,
+      seedMode,
+    });
+    this.commit((current) => ({ ...current, stages: [...current.stages, stage] }));
+    return true;
+  }
+
   removeStage(stageId: string): void {
     this.commit((tournament) => ({
       ...tournament,
@@ -79,7 +112,7 @@ export class TournamentStore {
   startNextSwissRound(stageId: string): boolean {
     const current = this.state();
     const stage = current.stages.find((item) => item.id === stageId);
-    if (!stage || stage.format !== 'swiss' || stage.rounds.some((round) => round.matches.some((match) => match.status === 'pending'))) {
+    if (!stage || stage.format !== 'swiss' || stage.rounds.some((round) => round.matches.some((match) => match.status === 'pending' || match.status === 'in-progress'))) {
       this.notice.set('Conclua todas as partidas da rodada atual antes de gerar a próxima.');
       return false;
     }
@@ -106,6 +139,22 @@ export class TournamentStore {
       return false;
     }
     const updatedStage = applyMatchResult(stage, roundNumber, matchId, result);
+    this.commit((tournament) => ({
+      ...tournament,
+      stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
+    }));
+    return true;
+  }
+
+  updateMatchProgress(stageId: string, roundNumber: number, matchId: string, scoreA: number, scoreB: number): boolean {
+    const current = this.state();
+    const stage = current.stages.find((item) => item.id === stageId);
+    const match = stage?.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+    if (!stage || !match || match.status === 'completed' || !validateMatchProgress(match, stage.bestOf, scoreA, scoreB)) {
+      this.notice.set('Placar parcial inválido. Não confirme uma série encerrada como parcial.');
+      return false;
+    }
+    const updatedStage = applyMatchProgress(stage, roundNumber, matchId, scoreA, scoreB);
     this.commit((tournament) => ({
       ...tournament,
       stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
@@ -248,6 +297,6 @@ function isTournament(value: unknown): value is Tournament {
             (match.playerBId === null || typeof match.playerBId === 'string') &&
             Number.isInteger(match.scoreA) && Number.isInteger(match.scoreB) &&
             (match.winnerId === null || typeof match.winnerId === 'string') &&
-            (match.status === 'pending' || match.status === 'completed' || match.status === 'bye')));
+            (match.status === 'pending' || match.status === 'in-progress' || match.status === 'completed' || match.status === 'bye')));
     });
 }

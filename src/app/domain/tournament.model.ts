@@ -1,7 +1,8 @@
 export type StageFormat = 'swiss' | 'single-elimination';
 export type BestOf = 3 | 5;
 export type StageStatus = 'ready' | 'in-progress' | 'completed';
-export type MatchStatus = 'pending' | 'completed' | 'bye';
+export type MatchStatus = 'pending' | 'in-progress' | 'completed' | 'bye';
+export type SeedMode = 'standings' | 'random' | 'manual';
 
 export interface Player {
   id: string;
@@ -33,6 +34,9 @@ export interface Stage {
   status: StageStatus;
   rounds: Round[];
   totalRounds: number;
+  participantIds?: string[];
+  sourceStageId?: string;
+  seedMode?: SeedMode;
 }
 
 export interface Tournament {

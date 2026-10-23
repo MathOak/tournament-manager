@@ -24,6 +24,20 @@ Na raiz do projeto:
 4. Em **Dashboard**, acompanhe as chaves, rodadas e classificação do sistema suíço.
 5. Use **Exportar JSON** e **Importar JSON** na página de jogadores para fazer backup ou transferir os dados.
 
+### Modo telão e temas
+
+- Abra **Modo telão** no dashboard ou use `/display` para uma visão pública de largura ampla, sem navegação administrativa; o botão permite solicitar tela cheia.
+- O tema escuro é padrão. O botão **Claro/Escuro** alterna a preferência, que fica salva neste navegador.
+- Partidas em andamento mostram o placar atual da série separado do retrospecto total (séries vencidas e perdidas). O retrospecto conta somente séries concluídas em todas as etapas; byes e séries parciais não são contados.
+
+### Classificação para a eliminatória
+
+Após concluir todas as rodadas suíças, use **Classificar para eliminatória** na configuração do torneio. Selecione o Top N ou ajuste participantes individualmente; escolha seeds pela classificação, sorteados ou em ordem manual. Empates na linha de corte exigem confirmação explícita. A fase suíça permanece intacta e a nova eliminatória guarda sua origem e seeds.
+
+### Atualização de resultados
+
+No Admin, escolha a etapa e rodada. Registre o placar parcial durante uma série ou confirme o resultado final (MD3: 2 vitórias; MD5: 3). Resultados concluídos ficam no histórico recolhido e exigem confirmação para correção, que pode alterar progressão da chave.
+
 As etapas suíça e eliminatória são independentes nesta primeira versão: não há avanço automático dos classificados de uma para outra. O pareamento suíço evita revanche quando encontra alternativa, atribui 1 ponto por vitória/bye e permite configurar o número de rodadas.
 
 ## Persistência e sincronização

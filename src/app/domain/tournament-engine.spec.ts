@@ -1,4 +1,4 @@
-import { applyMatchResult, calculateStandings, calculateTournamentRecords, createStage, validateMatchProgress, validateMatchResult } from './tournament-engine';
+import { applyMatchProgress, applyMatchResult, calculateStandings, calculateTournamentRecords, createNextSwissRound, createStage, validateMatchProgress, validateMatchResult } from './tournament-engine';
 import { Match, Player, createEmptyTournament } from './tournament.model';
 
 const players: Player[] = [
@@ -16,6 +16,14 @@ describe('tournament engine', () => {
   it('validates a completed MD3 result', () => {
     expect(validateMatchResult(pendingMatch(), 3, 2, 1)?.winnerId).toBe('p1');
     expect(validateMatchResult(pendingMatch(), 3, 1, 2)?.winnerId).toBe('p2');
+  });
+
+  it('rejects invalid participants, ties, non-integers and scores beyond the MD target', () => {
+    expect(validateMatchResult(pendingMatch(), 3, 1, 1)).toBeNull();
+    expect(validateMatchResult(pendingMatch(), 3, 2.5, 0)).toBeNull();
+    expect(validateMatchResult(pendingMatch(), 3, -1, 2)).toBeNull();
+    expect(validateMatchResult(pendingMatch(), 3, 3, 0)).toBeNull();
+    expect(validateMatchResult({ ...pendingMatch(), playerBId: null }, 3, 2, 0)).toBeNull();
   });
 
   it('validates a completed MD5 result and rejects incomplete or impossible scores', () => {
@@ -39,6 +47,46 @@ describe('tournament engine', () => {
     expect(stage.rounds[0].matches).toHaveLength(2);
     expect(stage.rounds[0].matches.filter((match) => match.status === 'bye')).toHaveLength(1);
     expect(calculateStandings(stage, players.slice(0, 3)).filter((standing) => standing.points === 1)).toHaveLength(1);
+  });
+
+  it('does not count pending, in-progress or bye matches as played series in standings', () => {
+    const stage = {
+      id: 's', name: 'Swiss', format: 'swiss' as const, bestOf: 3 as const, status: 'in-progress' as const,
+      totalRounds: 1, participantIds: players.map((player) => player.id),
+      rounds: [{ id: 'r', number: 1, matches: [
+        { id: 'bye', playerAId: 'p1', playerBId: null, scoreA: 0, scoreB: 0, winnerId: 'p1', status: 'bye' as const },
+        { id: 'live', playerAId: 'p2', playerBId: 'p3', scoreA: 1, scoreB: 0, winnerId: null, status: 'in-progress' as const },
+        { id: 'pending', playerAId: 'p3', playerBId: 'p4', scoreA: 0, scoreB: 0, winnerId: null, status: 'pending' as const },
+      ] }],
+    };
+    const standings = calculateStandings(stage, players);
+    expect(standings.find((entry) => entry.player.id === 'p1')).toMatchObject({ points: 1, played: 0 });
+    expect(standings.find((entry) => entry.player.id === 'p2')).toMatchObject({ points: 0, played: 0 });
+    expect(standings.find((entry) => entry.player.id === 'p3')).toMatchObject({ points: 0, played: 0 });
+  });
+
+  it('creates elimination brackets with the next power-of-two size and resolves byes', () => {
+    const fivePlayers = [...players, { id: 'p5', displayName: 'Eva' }];
+    const stage = createStage(fivePlayers, 'single-elimination', 3, 1, 'Playoffs', { seedOrder: fivePlayers.map((player) => player.id) });
+    expect(stage.rounds.map((round) => round.matches.length)).toEqual([4, 2, 1]);
+    expect(stage.rounds[0].matches.filter((match) => match.status === 'bye')).toHaveLength(3);
+    expect(stage.rounds[1].matches.some((match) => match.playerAId && match.playerBId)).toBe(true);
+    expect(stage.participantIds).toHaveLength(5);
+  });
+
+  it('returns no next Swiss round for non-Swiss stages or after the configured limit', () => {
+    const swiss = createStage(players, 'swiss', 3, 1);
+    const elimination = createStage(players, 'single-elimination', 3, 1);
+    expect(createNextSwissRound(elimination, players)).toBeNull();
+    expect(createNextSwissRound(swiss, players)).toBeNull();
+  });
+
+  it('applies partial scores immutably and leaves the match without a winner', () => {
+    const stage = createStage(players, 'single-elimination', 3, 1, 'Playoffs', { seedOrder: players.map((player) => player.id) });
+    const originalScore = stage.rounds[0].matches[0].scoreA;
+    const updated = applyMatchProgress(stage, 1, stage.rounds[0].matches[0].id, 1, 0);
+    expect(updated.rounds[0].matches[0]).toMatchObject({ scoreA: 1, scoreB: 0, winnerId: null, status: 'in-progress' });
+    expect(stage.rounds[0].matches[0].scoreA).toBe(originalScore);
   });
 
   it('generates a single-elimination bracket and propagates the winner', () => {

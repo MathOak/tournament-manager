@@ -93,4 +93,30 @@ describe('BracketDisplayComponent', () => {
     expect(component.connectorWidth()).toBe(68);
     expect(component.boardMinWidth()).toBe(496);
   });
+
+  it('shows only elimination stages and hides presentation navigation when embedded', () => {
+    tournament.stages.push({
+      id: 'swiss', name: 'Sistema suíço', format: 'swiss', bestOf: 3, status: 'completed', totalRounds: 1,
+      rounds: [{ id: 'swiss-round', number: 1, matches: [] }],
+    });
+    const fixture = TestBed.createComponent(BracketDisplayComponent);
+    fixture.componentRef.setInput('embedded', true);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelectorAll('.bracket-round-column')).toHaveLength(2);
+    expect(element.querySelector('nav[aria-label="Navegação do campeonato"]')).toBeNull();
+    expect(element.querySelector('.bracket-fullscreen-button')).toBeNull();
+    expect(element.querySelectorAll('#championship-select')).toHaveLength(1);
+  });
+
+  it('reports a graceful message when fullscreen is unavailable', () => {
+    const fixture = TestBed.createComponent(BracketDisplayComponent);
+    const component = fixture.componentInstance;
+    const original = Object.getOwnPropertyDescriptor(document.documentElement, 'requestFullscreen');
+    Object.defineProperty(document.documentElement, 'requestFullscreen', { configurable: true, value: undefined });
+    component.toggleFullscreen();
+    expect(component.fullscreenNotice()).toContain('não está disponível');
+    if (original) Object.defineProperty(document.documentElement, 'requestFullscreen', original);
+    else Reflect.deleteProperty(document.documentElement, 'requestFullscreen');
+  });
 });

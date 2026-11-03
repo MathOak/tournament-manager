@@ -5,6 +5,7 @@ import { routes } from './app.routes';
 
 describe('App', () => {
   beforeEach(async () => {
+    localStorage.removeItem('tournament-manager-theme');
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideRouter(routes)],
@@ -24,5 +25,18 @@ describe('App', () => {
     expect(compiled.querySelector('nav')?.textContent).toContain('Dashboard');
     expect(compiled.querySelector('nav')?.textContent).toContain('Chaves');
     expect(compiled.querySelector('nav')?.textContent).toContain('Admin');
+  });
+
+  it('toggles and persists the theme preference', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app.theme()).toBe('dark');
+    app.toggleTheme();
+    expect(app.theme()).toBe('light');
+    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(localStorage.getItem('tournament-manager-theme')).toBe('light');
+    app.toggleTheme();
+    expect(app.theme()).toBe('dark');
+    expect(document.documentElement.dataset['theme']).toBe('dark');
   });
 });

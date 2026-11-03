@@ -96,7 +96,7 @@ h3 { margin: 8px 0 0; font-size: 17px; letter-spacing: -.025em; }
 .muted { margin-bottom: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .small { font-size: 11px; }
 .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
-.button { border: 1px solid transparent; border-radius: 9px; min-height: 42px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-size: 12px; font-weight: 700; transition: .18s ease; }
+.button { border-radius: 9px; min-height: 42px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-size: 12px; font-weight: 700; transition: .18s ease; }
 .button-primary { color: #fff; background: var(--purple); box-shadow: 0 5px 12px #6855e72b; }
 .button-primary:hover { background: var(--purple-dark); transform: translateY(-1px); }
 .button-secondary { color: #515c73; background: #fff; border-color: var(--line); }
@@ -450,7 +450,7 @@ html[data-theme="light"] .button-primary:hover {
 .bracket-viewport { flex: 1; min-height: 0; overflow: auto; padding: 42px 4px 14px; scrollbar-color: var(--border-strong) transparent; }
 .bracket-board { width: 100%; min-width: 100%; display: flex; align-items: flex-start; gap: 0; }
 .bracket-fullscreen-notice { position: fixed; z-index: 30; top: 16px; left: 50%; max-width: calc(100vw - 32px); transform: translateX(-50%); margin: 0; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: 9px; color: var(--text); background: var(--surface-raised); box-shadow: 0 8px 25px #0005; font-size: 11px; }
-.bracket-display-page.bracket-embedded { height: auto; min-height: min(1000px, 85vh); overflow: visible; margin: 34px 0; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 14px 40px #0003; }
+.bracket-display-page.bracket-embedded { height: auto; min-height: min(1000px, 85vh); overflow: hidden; margin: 34px 0; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 14px 40px #0003; }
 .bracket-embedded .bracket-display-header { height: auto; min-height: 76px; flex: 0 0 auto; display: block; padding: 10px clamp(16px, 2.4vw, 42px); margin: 0 calc(clamp(16px, 2.4vw, 42px) * -1); }
 .bracket-embedded .bracket-viewport { flex: 0 0 auto; height: clamp(520px, 68vh, 1050px); }
 

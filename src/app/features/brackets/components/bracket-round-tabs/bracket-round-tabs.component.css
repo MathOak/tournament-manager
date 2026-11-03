@@ -1,4 +1,4 @@
-:host { width: min(1180px, calc(100% - 48px)); display: flex; align-self: center; }
+:host { width: 100%; display: flex; align-self: center; }
 .bracket-round-tabs { width: 100%; display: flex; gap: 5px; overflow-x: auto; margin: 2px 0 0; border-bottom: 1px solid var(--border); scrollbar-width: thin; }
 .bracket-round-tabs button { min-height: 32px; flex: 1 0 110px; padding: 0 13px; border: 0; border-bottom: 2px solid transparent; color: var(--text-secondary); background: transparent; cursor: pointer; font-size: 10px; font-weight: 750; }
 .bracket-round-tabs button:hover { color: var(--accent-interactive); }

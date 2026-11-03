@@ -1,6 +1,6 @@
 <section class="bracket-display-page" [class.bracket-embedded]="embedded" aria-label="Chaves do campeonato" [style.--bracket-card-height.px]="matchHeight()" [style.--bracket-gap.px]="baseGap()" [style.--bracket-connector-width.px]="connectorWidth()" [style.--bracket-min-column-width.px]="viewportSize().width < 600 ? 205 : 214">
   @if (!embedded) {
-    <app-header [theme]="theme()" (themeToggle)="toggleTheme()" />
+    <!-- <app-header [theme]="theme()" (themeToggle)="toggleTheme()" /> -->
   } @else {
     <header class="bracket-display-header">
       <app-bracket-toolbar [embedded]="true" [ready]="store.ready()" [tournaments]="store.tournaments()" [selectedTournamentId]="store.selectedTournamentId()" (tournamentSelected)="selectTournament($event)" />

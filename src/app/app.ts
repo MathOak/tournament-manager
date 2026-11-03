@@ -42,6 +42,6 @@ export class App {
   }
 
   private isPresentationRoute(url: string): boolean {
-    return url.startsWith('/display') || url.startsWith('/brackets');
+    return url.startsWith('/display') //|| url.startsWith('/brackets');
   }
 }

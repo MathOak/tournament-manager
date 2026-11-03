@@ -1,0 +1,26 @@
+<article class="panel stage-card">
+  <div class="stage-title-row"><div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }}</span><h3>{{ stage.name }}</h3></div><app-status-badge [label]="stage.status === 'completed' ? 'Concluída' : 'Em andamento'" [variant]="stage.status === 'completed' ? 'success' : 'info'" /></div>
+  @if (stage.sourceStageId) { <p class="stage-origin">Classificados do suíço <span>·</span> Seeds {{ stage.seedMode === 'standings' ? 'por classificação' : stage.seedMode === 'manual' ? 'manuais' : 'sorteados' }}</p> }
+  <p class="muted small">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} rodada(s)</p>
+  @if (stage.format === 'swiss') {
+    <div class="standings-table"><div class="table-row table-head"><span>Jogador · campanha</span><span>J</span><span>Pts</span></div>
+      @for (standing of standings(); track standing.player.id; let index = $index) {
+        <div class="table-row"><span><b class="rank">{{ index + 1 }}</b>{{ standing.player.displayName }} <small class="record-inline">{{ record(standing.player.id)?.wins ?? 0 }}V–{{ record(standing.player.id)?.losses ?? 0 }}D</small></span><span>{{ standing.played }}</span><strong>{{ standing.points }}</strong></div>
+      }
+    </div>
+  }
+  <div class="bracket-grid" [class.single-round]="stage.rounds.length === 1">
+    @for (round of stage.rounds; track round.id) {
+      <section class="bracket-round"><h4>{{ roundLabel(round) }}</h4>
+        @for (match of round.matches; track match.id) {
+          <div class="bracket-match" [class.bracket-live]="match.status === 'in-progress'" [class.bracket-finished]="match.status === 'completed' || match.status === 'bye'">
+            <div class="bracket-player" [class.bracket-winner]="match.winnerId === match.playerAId && match.status !== 'pending'"><span>{{ playerName(match.playerAId) }}</span><b>{{ match.scoreA }}</b></div>
+            <div class="bracket-player" [class.bracket-winner]="match.winnerId === match.playerBId && match.status !== 'pending'"><span>{{ playerName(match.playerBId) }}</span><b>{{ match.scoreB }}</b></div>
+            @if (match.status === 'in-progress') { <small class="bracket-state">AO VIVO</small> }
+            @else if (match.status === 'bye') { <small class="bracket-state">BYE · AVANÇA</small> }
+          </div>
+        }
+      </section>
+    }
+  </div>
+</article>

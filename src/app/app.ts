@@ -1,11 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { TournamentStore } from './core/tournament-store.service';
+import { AppHeaderComponent } from './shared/layout/app-header/app-header.component';
+import { AppFooterComponent } from './shared/layout/app-footer/app-footer.component';
+import { AppToastComponent } from './shared/layout/app-toast/app-toast.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterOutlet, AppHeaderComponent, AppFooterComponent, AppToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

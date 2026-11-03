@@ -1,7 +1,7 @@
-<section class="page-heading">
-  <div><p class="eyebrow">PARTICIPANTES</p><h1>Jogadores</h1><p class="muted">Gerencie a lista de participantes do torneio.</p></div>
-  <div class="button-row"><button class="button button-secondary" type="button" (click)="exportTournament()">Exportar JSON</button><label class="button button-secondary file-button">Importar JSON<input type="file" accept="application/json,.json" (change)="importTournament($event)"></label></div>
-</section>
+<app-page-heading kicker="PARTICIPANTES" title="Jogadores" description="Gerencie a lista de participantes do torneio.">
+  <button class="button button-secondary" type="button" (click)="exportTournament()">Exportar JSON</button>
+  <label class="button button-secondary file-button">Importar JSON<input type="file" accept="application/json,.json" (change)="importTournament($event)"></label>
+</app-page-heading>
 
 <div class="two-column-layout">
   <section class="panel form-panel">

@@ -1,0 +1,4 @@
+.toast { position: fixed; z-index: 20; right: 24px; top: 90px; max-width: min(420px, calc(100vw - 48px)); display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 36px #0004; font-size: 12px; }
+.icon-button { flex: 0 0 auto; width: 30px; height: 30px; border: 0; border-radius: 8px; color: var(--text-muted); background: transparent; cursor: pointer; font-size: 20px; }
+.icon-button:hover { color: var(--accent-interactive); background: var(--surface-raised); }
+.icon-button:focus-visible { outline: 3px solid var(--accent-interactive); outline-offset: 2px; }

@@ -1,0 +1,6 @@
+<section class="bracket-round-column" [id]="'bracket-round-' + roundIndex" [style.margin-top.px]="topMargin" [style.--round-offset.px]="topMargin" [style.gap.px]="matchGap" [attr.aria-label]="roundLabel(roundIndex)">
+  <header class="bracket-round-heading"><span>{{ roundLabel(roundIndex) }}</span><small>{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</small></header>
+  @for (match of round.matches; track match.id; let matchIndex = $index) {
+    <app-bracket-match-card [match]="match" [matchIndex]="matchIndex" [playerALabel]="participantLabel(matchIndex, 'a')" [playerBLabel]="participantLabel(matchIndex, 'b')" />
+  }
+</section>

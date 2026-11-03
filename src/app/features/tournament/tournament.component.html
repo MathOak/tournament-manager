@@ -1,4 +1,4 @@
-<section class="page-heading"><div><p class="eyebrow">CONFIGURAÇÃO</p><h1>Seu torneio, suas regras</h1><p class="muted">Defina o jogo e as etapas. Os formatos estão separados para você configurar a competição desejada.</p></div></section>
+<app-page-heading kicker="CONFIGURAÇÃO" title="Seu torneio, suas regras" description="Defina o jogo e as etapas. Os formatos estão separados para você configurar a competição desejada." />
 
 <div class="two-column-layout setup-layout">
   <section class="panel form-panel">
@@ -31,7 +31,7 @@
 } @else {
   <div class="stage-grid">
     @for (stage of store.tournament().stages; track stage.id) {
-      <article class="panel stage-summary"><div class="stage-title-row"><div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }}</span><h3>{{ stage.name }}</h3></div><button class="icon-button danger" type="button" (click)="removeStage(stage.id)" aria-label="Excluir etapa">×</button></div><p class="muted">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} de {{ stage.totalRounds }} rodada(s)</p>
+      <article class="panel stage-summary"><div class="stage-title-row"><div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }}</span><h3>{{ stage.name }}</h3></div><app-status-badge [label]="stage.status === 'completed' ? 'Concluída' : 'Em andamento'" [variant]="stage.status === 'completed' ? 'success' : 'info'" /><button class="icon-button danger" type="button" (click)="removeStage(stage.id)" aria-label="Excluir etapa">×</button></div><p class="muted">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} de {{ stage.totalRounds }} rodada(s)</p>
         @if (stage.format === 'swiss' && stage.rounds.length < stage.totalRounds) { <button class="button button-secondary" type="button" (click)="nextRound(stage.id)" [disabled]="hasPendingMatches(stage)">Gerar próxima rodada</button> }
       </article>
     }

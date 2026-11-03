@@ -1,0 +1,3 @@
+<svg class="bracket-connectors" [attr.width]="connectorWidth" [attr.height]="boardHeight" [attr.viewBox]="'0 0 ' + connectorWidth + ' ' + boardHeight" preserveAspectRatio="none" aria-hidden="true">
+  @for (path of paths(); track $index) { <path [attr.d]="path"></path> }
+</svg>

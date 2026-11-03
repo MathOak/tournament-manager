@@ -1,15 +1,21 @@
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { RouterLink } from '@angular/router';
-import { calculateStandings, calculateTournamentRecords } from '../../domain/tournament-engine';
-import { Match, Round, Stage } from '../../domain/tournament.model';
+import { calculateTournamentRecords } from '../../domain/tournament-engine';
+import { Round } from '../../domain/tournament.model';
 import { TournamentStore } from '../../core/tournament-store.service';
 import { BracketDisplayComponent } from '../brackets/bracket-display.component';
+import { DashboardHeroComponent } from './components/dashboard-hero/dashboard-hero.component';
+import { TournamentStatsComponent } from './components/tournament-stats/tournament-stats.component';
+import { LiveMatchCardComponent } from './components/live-match-card/live-match-card.component';
+import { UpcomingMatchCardComponent } from './components/upcoming-match-card/upcoming-match-card.component';
+import { StageOverviewComponent } from './components/stage-overview/stage-overview.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, BracketDisplayComponent],
+  imports: [RouterLink, BracketDisplayComponent, DashboardHeroComponent, TournamentStatsComponent, LiveMatchCardComponent, UpcomingMatchCardComponent, StageOverviewComponent, EmptyStateComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
@@ -29,19 +35,8 @@ export class DashboardComponent {
     (total, stage) => total + stage.rounds.reduce((count, round) => count + round.matches.filter((match) => match.status !== 'pending').length, 0), 0,
   ));
 
-  standings(stage: Stage) {
-    const players = this.tournament().players;
-    return calculateStandings(stage, stage.participantIds ? players.filter((player) => stage.participantIds!.includes(player.id)) : players);
-  }
-
   playerName(playerId: string | null): string {
     return this.tournament().players.find((player) => player.id === playerId)?.displayName ?? 'A definir';
-  }
-
-  matchLabel(match: Match): string {
-    if (match.status === 'bye') return 'Classificado por bye';
-    if (match.status === 'completed') return `${match.scoreA} – ${match.scoreB}`;
-    return 'Aguardando resultado';
   }
 
   record(playerId: string | null) {

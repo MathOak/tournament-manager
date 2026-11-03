@@ -62,7 +62,7 @@ describe('BracketDisplayComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('#championship-select')?.textContent).toContain('Copa de Teste');
-    expect(element.querySelectorAll('.bracket-round-column')).toHaveLength(2);
+    expect(element.querySelectorAll('app-bracket-round-column')).toHaveLength(2);
     expect(element.querySelectorAll('.bracket-game')).toHaveLength(3);
     expect(element.querySelector('.bracket-connectors path')).toBeTruthy();
     expect(element.textContent).toContain('Semifinal');
@@ -103,7 +103,7 @@ describe('BracketDisplayComponent', () => {
     fixture.componentRef.setInput('embedded', true);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelectorAll('.bracket-round-column')).toHaveLength(2);
+    expect(element.querySelectorAll('app-bracket-round-column')).toHaveLength(2);
     expect(element.querySelector('nav[aria-label="Navegação do campeonato"]')).toBeNull();
     expect(element.querySelector('.bracket-fullscreen-button')).toBeNull();
     expect(element.querySelectorAll('#championship-select')).toHaveLength(1);

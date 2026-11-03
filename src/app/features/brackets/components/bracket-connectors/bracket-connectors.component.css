@@ -1,0 +1,4 @@
+:host { z-index: 0; flex: 0 0 var(--bracket-connector-width); width: var(--bracket-connector-width); overflow: visible; }
+.bracket-connectors { display: block; overflow: visible; }
+.bracket-connectors path { fill: none; stroke: color-mix(in srgb, var(--accent-interactive) 24%, var(--border-strong)); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+:host-context(html[data-theme="light"]) .bracket-connectors path { stroke: #9daac7; }

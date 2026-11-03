@@ -1,0 +1,5 @@
+.status-badge { display: inline-flex; align-items: center; width: max-content; white-space: nowrap; border-radius: 20px; padding: 6px 9px; font-size: 9px; font-weight: 750; }
+.info { color: var(--accent-interactive); background: color-mix(in srgb, var(--accent-interactive) 14%, var(--surface)); }
+.success { color: #081d17; background: var(--success); }
+.warning { color: var(--badge-highlight); background: color-mix(in srgb, var(--badge-highlight) 14%, var(--surface)); }
+.highlight { color: #17120a; background: var(--badge-highlight); }

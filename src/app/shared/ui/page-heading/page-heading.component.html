@@ -1,0 +1,8 @@
+<section class="page-heading">
+  <div>
+    @if (kicker) { <p class="eyebrow">{{ kicker }}</p> }
+    <h1>{{ title }}</h1>
+    @if (description) { <p class="muted">{{ description }}</p> }
+  </div>
+  <div class="page-heading-actions"><ng-content /></div>
+</section>

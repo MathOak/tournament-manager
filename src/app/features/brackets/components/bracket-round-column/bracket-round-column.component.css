@@ -1,0 +1,4 @@
+:host { position: relative; z-index: 1; min-width: var(--bracket-min-column-width); display: flex; flex: 1 1 0; flex-direction: column; }
+.bracket-round-column { position: relative; display: flex; flex-direction: column; }
+.bracket-round-heading { position: absolute; top: calc(-1 * var(--round-offset, 0px) - 43px); left: 0; right: 0; min-height: 29px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 3px 6px; border-bottom: 2px solid color-mix(in srgb, var(--accent-interactive) 42%, var(--border)); color: var(--accent-interactive); font-size: clamp(11px, .7vw, 22px); font-weight: 850; }
+.bracket-round-heading small { color: var(--text-muted); font-size: 9px; font-weight: 600; }

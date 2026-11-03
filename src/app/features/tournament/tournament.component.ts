@@ -3,11 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { calculateStandings, calculateTournamentRecords } from '../../domain/tournament-engine';
 import { BestOf, SeedMode, Stage, StageFormat } from '../../domain/tournament.model';
 import { TournamentStore } from '../../core/tournament-store.service';
+import { PageHeadingComponent } from '../../shared/ui/page-heading/page-heading.component';
+import { StatusBadgeComponent } from '../../shared/ui/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-tournament-setup',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PageHeadingComponent, StatusBadgeComponent],
   templateUrl: './tournament.component.html',
 })
 export class TournamentComponent {

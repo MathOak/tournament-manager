@@ -1,0 +1,5 @@
+<nav class="bracket-round-tabs" aria-label="Navegar pelas rodadas">
+  @for (round of stage.rounds; track round.id; let roundIndex = $index) {
+    <button type="button" [class.selected]="selectedIndex === roundIndex" (click)="roundSelected.emit(roundIndex)">{{ roundLabel(roundIndex) }}</button>
+  }
+</nav>

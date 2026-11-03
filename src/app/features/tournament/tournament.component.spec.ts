@@ -49,6 +49,7 @@ describe('TournamentComponent', () => {
     const fixture = TestBed.createComponent(TournamentComponent);
     const component = fixture.componentInstance;
     component.tournamentName = ' Copa '; component.game = ' X '; component.saveDetails();
+    fixture.detectChanges();
     expect(storeMock.updateTournamentDetails).toHaveBeenCalledWith(' Copa ', ' X ');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Seu torneio, suas regras');
   });

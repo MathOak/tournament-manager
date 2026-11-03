@@ -1,0 +1,14 @@
+<header class="topbar">
+  <a class="brand" routerLink="/" aria-label="Tournament Manager — início"><span class="brand-mark">TM</span><span>Tournament<span class="brand-light">Manager</span></span></a>
+  <nav class="main-nav" aria-label="Navegação principal">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+    <a routerLink="/players" routerLinkActive="active">Jogadores</a>
+    <a routerLink="/tournament" routerLinkActive="active">Torneio</a>
+    <a routerLink="/brackets" routerLinkActive="active">Chaves</a>
+    <a routerLink="/admin" routerLinkActive="active">Admin</a>
+  </nav>
+  <button class="theme-toggle" type="button" (click)="themeToggle.emit()" [attr.aria-label]="theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'">
+    <span aria-hidden="true">{{ theme === 'dark' ? '☀' : '☾' }}</span>{{ theme === 'dark' ? 'Claro' : 'Escuro' }}
+  </button>
+  <span class="live-indicator"><span></span> Dados locais</span>
+</header>

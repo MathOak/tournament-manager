@@ -1,7 +1,15 @@
 import { Component, HostListener, Input, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { TournamentStore } from '../../core/tournament-store.service';
-import { Match, Stage } from '../../domain/tournament.model';
+import { Stage } from '../../domain/tournament.model';
+import { AppHeaderComponent } from '../../shared/layout/app-header/app-header.component';
+import { BracketConnectorsComponent } from './components/bracket-connectors/bracket-connectors.component';
+import { BracketRoundColumnComponent } from './components/bracket-round-column/bracket-round-column.component';
+import { BracketRoundTabsComponent } from './components/bracket-round-tabs/bracket-round-tabs.component';
+import { BracketEventSummaryComponent } from './components/bracket-event-summary/bracket-event-summary.component';
+import { BracketLegendComponent } from './components/bracket-legend/bracket-legend.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
+import { BracketToolbarComponent } from './components/bracket-toolbar/bracket-toolbar.component';
 
 const MAX_MATCH_HEIGHT = 176;
 const MIN_COLUMN_WIDTH = 214;
@@ -9,7 +17,7 @@ const MIN_COLUMN_WIDTH = 214;
 @Component({
   selector: 'app-bracket-display',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, AppHeaderComponent, BracketConnectorsComponent, BracketRoundColumnComponent, BracketRoundTabsComponent, BracketEventSummaryComponent, BracketLegendComponent, EmptyStateComponent, BracketToolbarComponent],
   templateUrl: './bracket-display.component.html',
 })
 export class BracketDisplayComponent {
@@ -49,15 +57,14 @@ export class BracketDisplayComponent {
     this.syncFullscreen();
   }
 
-  selectTournament(event: Event): void {
-    const id = (event.target as HTMLSelectElement).value;
+  selectTournament(id: string): void {
     if (!this.store.selectTournament(id)) return;
     this.selectedStageId.set(this.eliminationStages()[0]?.id ?? '');
     this.selectedRoundIndex.set(0);
   }
 
-  selectStage(event: Event): void {
-    this.selectedStageId.set((event.target as HTMLSelectElement).value);
+  selectStage(stageId: string): void {
+    this.selectedStageId.set(stageId);
     this.selectedRoundIndex.set(0);
   }
 
@@ -67,53 +74,12 @@ export class BracketDisplayComponent {
     this.selectedRoundIndex.set(0);
   }
 
-  playerName(playerId: string | null): string {
-    return this.store.tournament().players.find((player) => player.id === playerId)?.displayName ?? 'A definir';
-  }
-
-  participantLabel(stage: Stage, roundIndex: number, matchIndex: number, side: 'a' | 'b'): string {
-    const match = stage.rounds[roundIndex]?.matches[matchIndex];
-    if (!match) return 'A definir';
-    const playerId = side === 'a' ? match.playerAId : match.playerBId;
-    if (playerId) return this.playerName(playerId);
-    if (match.status === 'bye' && (match.playerAId || match.playerBId)) return 'BYE';
-    if (roundIndex === 0) return 'A definir';
-    const sourceRound = stage.rounds[roundIndex - 1];
-    const sourceMatch = sourceRound?.matches[matchIndex * 2 + (side === 'a' ? 0 : 1)];
-    if (!sourceMatch) return 'A definir';
-    return `Vencedor de ${this.roundLabel(stage, roundIndex - 1)} · Jogo ${matchIndex * 2 + (side === 'a' ? 1 : 2)}`;
-  }
-
-  roundLabel(stage: Stage, roundIndex: number): string {
-    const matchCount = stage.rounds[roundIndex]?.matches.length ?? 0;
-    const participants = matchCount * 2;
-    if (participants === 2) return 'Final';
-    if (participants === 4) return 'Semifinal';
-    if (participants === 8) return 'Quartas de final';
-    if (participants === 16) return 'Oitavas de final';
-    return `Rodada de ${participants}`;
-  }
-
   roundTopMargin(roundIndex: number): number {
     return ((2 ** roundIndex) - 1) * (this.matchHeight() + this.baseGap()) / 2;
   }
 
   roundGap(roundIndex: number): number {
     return (2 ** roundIndex) * (this.matchHeight() + this.baseGap()) - this.matchHeight();
-  }
-
-  connectorPaths(stage: Stage, roundIndex: number): string[] {
-    const currentRound = stage.rounds[roundIndex];
-    const nextRound = stage.rounds[roundIndex + 1];
-    if (!currentRound || !nextRound) return [];
-    return nextRound.matches.map((_, targetIndex) => {
-      const firstSource = targetIndex * 2;
-      const yA = this.matchCenter(roundIndex, firstSource);
-      const yB = this.matchCenter(roundIndex, firstSource + 1);
-      const yTarget = this.matchCenter(roundIndex + 1, targetIndex);
-      const junction = Math.round(this.connectorWidth() * 0.4);
-      return `M 0 ${yA} H ${junction} V ${yTarget} H ${this.connectorWidth()} M 0 ${yB} H ${junction} V ${yTarget}`;
-    });
   }
 
   focusRound(roundIndex: number): void {
@@ -153,10 +119,6 @@ export class BracketDisplayComponent {
   @HostListener('window:resize')
   updateViewportSize(): void {
     if (typeof window !== 'undefined') this.viewportSize.set({ width: window.innerWidth, height: window.innerHeight });
-  }
-
-  private matchCenter(roundIndex: number, matchIndex: number): number {
-    return this.roundTopMargin(roundIndex) + this.matchHeight() / 2 + matchIndex * (this.roundGap(roundIndex) + this.matchHeight());
   }
 
   private readTheme(): 'dark' | 'light' {

@@ -1,23 +1,8 @@
 <div class="app-shell" [class.display-shell]="displayMode()">
   @if (!displayMode()) {
-    <header class="topbar">
-      <a class="brand" routerLink="/" aria-label="Tournament Manager — início"><span class="brand-mark">TM</span><span>Tournament<span class="brand-light">Manager</span></span></a>
-      <nav class="main-nav" aria-label="Navegação principal">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
-        <a routerLink="/players" routerLinkActive="active">Jogadores</a>
-        <a routerLink="/tournament" routerLinkActive="active">Torneio</a>
-        <a routerLink="/brackets" routerLinkActive="active">Chaves</a>
-        <a routerLink="/admin" routerLinkActive="active">Admin</a>
-      </nav>
-      <button class="theme-toggle" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'">
-        <span aria-hidden="true">{{ theme() === 'dark' ? '☀' : '☾' }}</span>{{ theme() === 'dark' ? 'Claro' : 'Escuro' }}
-      </button>
-      <span class="live-indicator"><span></span> Dados locais</span>
-    </header>
+    <app-header [theme]="theme()" (themeToggle)="toggleTheme()" />
   }
-  @if (store.notice()) {
-    <div class="toast" role="status"><span>{{ store.notice() }}</span><button class="icon-button" type="button" (click)="store.dismissNotice()" aria-label="Fechar aviso">×</button></div>
-  }
+  <app-toast [message]="store.notice()" (dismissed)="store.dismissNotice()" />
   <main class="page-container" [class.display-page]="displayMode()"><router-outlet /></main>
-  @if (!displayMode()) { <footer class="footer">Tournament Manager <span>•</span> Persistência neste navegador</footer> }
+  @if (!displayMode()) { <app-footer /> }
 </div>

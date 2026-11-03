@@ -1,0 +1,27 @@
+.live-match-card { min-width: 0; padding: 18px 20px; overflow: hidden; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); }
+.live-match-card.is-live { border-color: color-mix(in srgb, var(--accent-primary) 58%, var(--border)); box-shadow: inset 3px 0 var(--accent-primary), 0 8px 24px #0005; }
+.live-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 9px; color: var(--text-muted); font-size: 10px; }
+.live-chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 99px; color: #ff6eb5; background: color-mix(in srgb, var(--accent-primary) 18%, var(--surface)); font-size: 9px; font-weight: 850; letter-spacing: .1em; }
+.live-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 18%, transparent); }
+.versus-board { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; padding: 23px 3px 7px; }
+.contestant { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.contestant-a { text-align: right; align-items: flex-end; }
+.contestant-b { text-align: left; align-items: flex-start; }
+.contestant strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: clamp(16px, 2vw, 22px); letter-spacing: -.04em; }
+.contestant small { color: var(--text-muted); font-size: 8px; letter-spacing: .09em; }
+.contestant-record { color: var(--accent-interactive); font-size: 11px; font-weight: 800; }
+.series-score { display: grid; grid-template-columns: auto 16px auto; align-items: center; justify-items: center; column-gap: 3px; }
+.series-score strong { min-width: 36px; color: var(--text); font-size: clamp(30px, 4vw, 46px); line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
+.series-score > span { color: var(--text-muted); font-size: 24px; }
+.series-score small { grid-column: 1 / -1; margin-top: 8px; color: var(--text-muted); font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+@media (max-width: 760px) {
+  .versus-board { gap: 8px; }
+  .contestant strong { font-size: 15px; }
+  .live-card-meta { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 430px) {
+  .versus-board { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .series-score strong { min-width: 26px; font-size: 29px; }
+  .contestant-record { font-size: 9px; }
+  .contestant small { font-size: 7px; }
+}

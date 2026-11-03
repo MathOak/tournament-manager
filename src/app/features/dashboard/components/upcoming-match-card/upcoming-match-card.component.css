@@ -1,0 +1,8 @@
+.live-match-card { min-width: 0; padding: 15px; overflow: hidden; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); }
+.live-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 9px; color: var(--text-muted); font-size: 10px; }
+.upcoming-chip { display: inline-flex; align-items: center; padding: 5px 8px; border-radius: 99px; color: var(--accent-interactive); background: color-mix(in srgb, var(--accent-interactive) 13%, var(--surface)); font-size: 9px; font-weight: 850; letter-spacing: .1em; }
+.upcoming-contestants { display: flex; flex-direction: column; gap: 8px; padding: 17px 0 11px; }
+.upcoming-contestants strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 14px; }
+.upcoming-contestants span { color: var(--text-muted); font-size: 9px; font-weight: 800; }
+.upcoming-records { display: flex; justify-content: space-between; color: var(--accent-interactive); font-size: 10px; font-weight: 750; }
+@media (max-width: 760px) { .live-card-meta { align-items: flex-start; flex-direction: column; } }

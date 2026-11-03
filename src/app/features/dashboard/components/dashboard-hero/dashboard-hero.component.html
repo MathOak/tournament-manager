@@ -1,0 +1,7 @@
+<section class="dashboard-head" [class.display-head]="displayMode">
+  <div class="event-brand"><span class="event-emblem">TM</span><div><p class="eyebrow">{{ tournament.game }} · TORNEIO AO VIVO</p><h1>{{ tournament.name }}</h1><p class="muted">{{ tournament.players.length }} jogadores <span class="dot-separator">•</span> {{ completedSeries }} séries concluídas</p></div></div>
+  <div class="dashboard-actions">
+    @if (displayMode) { <button class="button button-glass" type="button" (click)="fullscreenRequested.emit()">⛶ Tela cheia</button><a class="button button-glass" routerLink="/">Sair do telão</a> }
+    @else { <a class="button button-secondary" routerLink="/display">⛶ Modo telão</a><a class="button button-primary" routerLink="/admin">Painel admin <span aria-hidden="true">→</span></a> }
+  </div>
+</section>

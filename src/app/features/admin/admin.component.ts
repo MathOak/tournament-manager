@@ -3,11 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Match, Stage } from '../../domain/tournament.model';
 import { TournamentStore } from '../../core/tournament-store.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
+import { PageHeadingComponent } from '../../shared/ui/page-heading/page-heading.component';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, EmptyStateComponent, PageHeadingComponent],
   templateUrl: './admin.component.html',
 })
 export class AdminComponent {

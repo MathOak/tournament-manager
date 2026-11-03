@@ -1,6 +1,6 @@
 # Plano de refatoração — componentes compartilhados e CSS co-localizado
 
-**Status:** plano para execução; esta solicitação cria o plano, não altera os componentes ainda.
+**Status:** implementado em 2026-11-03.
 
 ## 1. Objetivo
 
@@ -251,3 +251,41 @@ A estrutura é indicativa: preferir componentes locais dentro de `features/<feat
 6. Dashboard hero, partidas e métricas.
 7. Componentes transversais PageHeading/Badge/EmptyState/IconButton.
 8. Limpeza final de `src/styles.css`, documentação e validação ponta a ponta.
+
+## 10. Execução registrada
+
+- **Layout compartilhado:** criados `src/app/shared/layout/app-header/`, `app-footer/` e `app-toast/`, cada um com TypeScript, template, CSS e spec. O shell usa esses componentes e a página dedicada `/brackets` reutiliza o mesmo Header, removendo a cópia da navegação.
+- **Bracket:** o contêiner `BracketDisplayComponent` mantém store, seleção, tamanho do viewport e fullscreen; as apresentações foram separadas em `BracketToolbarComponent`, `BracketEventSummaryComponent`, `BracketRoundTabsComponent`, `BracketRoundColumnComponent`, `BracketMatchCardComponent`, `BracketConnectorsComponent` e `BracketLegendComponent`. Os estilos de cartão/coluna/conectores/tabs/resumo/legenda ficam junto aos componentes.
+- **Dashboard:** criados `DashboardHeroComponent`, `TournamentStatsComponent`, `LiveMatchCardComponent`, `UpcomingMatchCardComponent` e `StageOverviewComponent`. O dashboard calcula estado/records e passa valores por inputs; os componentes de UI não dependem diretamente do store.
+- **UI compartilhada:** criados `PageHeadingComponent`, `StatusBadgeComponent` e `EmptyStateComponent`, reutilizados em Jogadores, Torneio, Admin, Dashboard e Brackets.
+- **CSS:** movidos estilos dos componentes extraídos para arquivos `.css` co-localizados e removidos os blocos duplicados do `src/styles.css`. A folha global mantém tokens/tema, reset, controles comuns e estilos que continuam compartilhados pelas features existentes.
+- **Testes:** cada novo componente recebeu teste de contrato/apresentação; os testes de shell, dashboard, bracket e páginas foram atualizados para a composição nova.
+- **Validação:** `npm run build` concluído; `npm test` aprovou 25 arquivos e 65 testes. O modo navegador foi inspecionado em `/` e `/brackets`; o header compartilhado, menu, seleção, rounds, scorecards e conteúdo do dashboard permaneceram renderizados. Os cenários E2E não foram reexecutados nesta refatoração; a execução Playwright anterior neste ambiente foi bloqueada pelo `spawn EPERM` ao iniciar Chromium.
+
+### Estrutura efetivamente criada
+
+```text
+src/app/shared/
+  layout/
+    app-header/
+    app-footer/
+    app-toast/
+  ui/
+    empty-state/
+    page-heading/
+    status-badge/
+src/app/features/brackets/components/
+  bracket-toolbar/
+  bracket-event-summary/
+  bracket-round-tabs/
+  bracket-round-column/
+  bracket-match-card/
+  bracket-connectors/
+  bracket-legend/
+src/app/features/dashboard/components/
+  dashboard-hero/
+  tournament-stats/
+  live-match-card/
+  upcoming-match-card/
+  stage-overview/
+```

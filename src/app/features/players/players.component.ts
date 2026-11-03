@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TournamentStore } from '../../core/tournament-store.service';
+import { PageHeadingComponent } from '../../shared/ui/page-heading/page-heading.component';
 
 @Component({
   selector: 'app-players',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PageHeadingComponent],
   templateUrl: './players.component.html',
 })
 export class PlayersComponent {

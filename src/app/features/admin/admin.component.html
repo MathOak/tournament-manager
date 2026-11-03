@@ -1,7 +1,7 @@
-<section class="page-heading admin-heading"><div><p class="eyebrow">CENTRAL DE OPERAÇÃO</p><h1>Gerenciar partidas</h1><p class="muted">Atualize placares e confirme resultados. O dashboard acompanha as mudanças automaticamente.</p></div><span class="admin-badge">ADMIN</span></section>
+<app-page-heading kicker="CENTRAL DE OPERAÇÃO" title="Gerenciar partidas" description="Atualize placares e confirme resultados. O dashboard acompanha as mudanças automaticamente."><span class="admin-badge">ADMIN</span></app-page-heading>
 
 @if (store.tournament().stages.length === 0) {
-  <section class="empty-state"><div class="empty-icon">⌘</div><h2>Nenhuma etapa pronta</h2><p>Cadastre participantes e crie uma etapa para iniciar o controle das partidas.</p><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></section>
+  <app-empty-state icon="⌘" title="Nenhuma etapa pronta" description="Cadastre participantes e crie uma etapa para iniciar o controle das partidas."><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></app-empty-state>
 } @else if (activeStage(); as stage) {
   <section class="admin-toolbar panel">
     <div class="admin-selectors"><label for="admin-stage">Etapa<select id="admin-stage" [ngModel]="stage.id" (ngModelChange)="selectStage($event)"><option [ngValue]="stage.id">{{ stage.name }}</option>@for (other of store.tournament().stages; track other.id) { @if (other.id !== stage.id) { <option [ngValue]="other.id">{{ other.name }}</option> } }</select></label><div class="admin-round-label"><span class="eyebrow">RODADA EM FOCO</span><strong>{{ currentRound() ? 'Rodada ' + currentRound()!.number : 'Sem partidas' }}</strong></div></div>

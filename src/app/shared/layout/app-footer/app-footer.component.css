@@ -1,0 +1,4 @@
+:host { display: block; width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+.footer { padding: 18px 0 24px; color: var(--text-muted); font-size: 11px; }
+.footer span { color: var(--border-strong); padding: 0 5px; }
+@media (max-width: 760px) { :host { width: calc(100% - 32px); } }

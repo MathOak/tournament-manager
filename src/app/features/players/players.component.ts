@@ -39,7 +39,7 @@ export class PlayersComponent {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    const accepted = confirm('Importar este arquivo substituirá os dados atuais do torneio. Continuar?');
+    const accepted = confirm('Importar este arquivo como um campeonato separado? Os campeonatos existentes serão mantidos.');
     if (!accepted) {
       input.value = '';
       return;

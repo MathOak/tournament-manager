@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { calculateStandings, calculateTournamentRecords } from '../../domain/tournament-engine';
 import { Match, Round, Stage } from '../../domain/tournament.model';
 import { TournamentStore } from '../../core/tournament-store.service';
+import { BracketDisplayComponent } from '../brackets/bracket-display.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, BracketDisplayComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {

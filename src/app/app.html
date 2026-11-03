@@ -6,6 +6,7 @@
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
         <a routerLink="/players" routerLinkActive="active">Jogadores</a>
         <a routerLink="/tournament" routerLinkActive="active">Torneio</a>
+        <a routerLink="/brackets" routerLinkActive="active">Chaves</a>
         <a routerLink="/admin" routerLinkActive="active">Admin</a>
       </nav>
       <button class="theme-toggle" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'">

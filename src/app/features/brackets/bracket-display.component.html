@@ -1,0 +1,101 @@
+<section class="bracket-display-page" [class.bracket-embedded]="embedded" aria-label="Chaves do campeonato" [style.--bracket-card-height.px]="matchHeight()" [style.--bracket-gap.px]="baseGap()" [style.--bracket-connector-width.px]="connectorWidth()" [style.--bracket-min-column-width.px]="viewportSize().width < 600 ? 205 : 214">
+  <header class="bracket-display-header">
+    @if (!embedded) { <a class="bracket-brand" routerLink="/" aria-label="Voltar ao dashboard"><span class="bracket-brand-mark">TM</span><span>TOURNAMENT <b>MANAGER</b></span></a> }
+    <div class="bracket-heading">
+      <p class="bracket-kicker">VISUALIZAÇÃO DE CAMPEONATO</p>
+      <h1>Chaves</h1>
+    </div>
+    @if (!embedded) {
+      <nav class="bracket-inline-nav" aria-label="Navegação do campeonato">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+        <a routerLink="/players" routerLinkActive="active">Jogadores</a>
+        <a routerLink="/tournament" routerLinkActive="active">Torneio</a>
+        <a routerLink="/brackets" routerLinkActive="active">Chaves</a>
+        <a routerLink="/admin" routerLinkActive="active">Admin</a>
+      </nav>
+    }
+    <div class="bracket-toolbar-controls">
+      <label class="bracket-select-label" for="championship-select">Campeonato
+        <select id="championship-select" [value]="store.selectedTournamentId()" [disabled]="!store.ready() || store.tournaments().length < 2" (change)="selectTournament($event)" aria-label="Selecionar campeonato">
+          @for (tournament of store.tournaments(); track tournament.id) {
+            <option [value]="tournament.id">{{ tournament.name }}{{ tournament.game ? ' · ' + tournament.game : '' }}</option>
+          }
+        </select>
+      </label>
+      @if (eliminationStages().length > 1) {
+        <label class="bracket-select-label" for="stage-select">Chave
+          <select id="stage-select" [value]="selectedStage()!.id" (change)="selectStage($event)" aria-label="Selecionar chave eliminatória">
+            @for (stage of eliminationStages(); track stage.id) { <option [value]="stage.id">{{ stage.name }}</option> }
+          </select>
+        </label>
+      }
+      @if (!embedded) {
+        <button class="bracket-control-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'">
+          <span aria-hidden="true">{{ theme() === 'dark' ? '☀' : '☾' }}</span>{{ theme() === 'dark' ? 'Claro' : 'Escuro' }}
+        </button>
+        <button class="bracket-control-button bracket-fullscreen-button" type="button" (click)="toggleFullscreen()">
+          <span aria-hidden="true">{{ fullscreen() ? '⛶' : '⛶' }}</span>{{ fullscreen() ? 'Sair da tela cheia' : 'Tela cheia' }}
+        </button>
+        <button class="bracket-control-button" type="button" (click)="createTournament()">+ Novo</button>
+      }
+    </div>
+  </header>
+
+  @if (fullscreenNotice()) { <p class="bracket-fullscreen-notice" role="status">{{ fullscreenNotice() }}</p> }
+
+  @if (!store.ready()) {
+    <section class="bracket-empty-state"><span class="bracket-empty-mark">…</span><h2>Carregando campeonatos</h2><p>Buscando os dados salvos neste navegador.</p></section>
+  } @else if (!selectedStage()) {
+    <section class="bracket-empty-state">
+      <span class="bracket-empty-mark">⌘</span>
+      <p class="bracket-kicker">{{ store.tournament().name }}</p>
+      <h2>Nenhuma chave eliminatória encontrada</h2>
+      <p>Esta tela exibe somente etapas de eliminação simples. Crie ou importe um campeonato com chave para apresentá-la aqui.</p>
+      <div class="bracket-empty-actions">
+        <a class="bracket-control-button bracket-primary-link" routerLink="/tournament">Configurar etapas</a>
+        <button class="bracket-control-button" type="button" (click)="createTournament()">+ Novo campeonato</button>
+      </div>
+    </section>
+  } @else {
+    <section class="bracket-event-summary">
+      <div><p class="bracket-kicker">{{ store.tournament().game || 'CAMPEONATO' }} <span>·</span> ELIMINAÇÃO SIMPLES</p><h2>{{ store.tournament().name }}</h2></div>
+      <div class="bracket-stage-meta"><span>{{ selectedStage()!.name }}</span><b>MD{{ selectedStage()!.bestOf }}</b><span>{{ selectedStage()!.participantIds?.length ?? store.tournament().players.length }} participantes</span></div>
+    </section>
+    <nav class="bracket-round-tabs" aria-label="Navegar pelas rodadas">
+      @for (round of selectedStage()!.rounds; track round.id; let roundIndex = $index) {
+        <button type="button" [class.selected]="selectedRoundIndex() === roundIndex" (click)="focusRound(roundIndex)">{{ roundLabel(selectedStage()!, roundIndex) }}</button>
+      }
+    </nav>
+    @if (selectedStage()!.rounds.length === 0) {
+      <section class="bracket-empty-state bracket-empty-inline"><h2>A chave ainda não tem rodadas</h2><p>Gere a chave na configuração do torneio para exibi-la neste painel.</p></section>
+    } @else {
+      <div class="bracket-viewport" tabindex="0" aria-label="Chave eliminatória completa. Use rolagem horizontal para navegar entre as rodadas.">
+        <div class="bracket-board" [style.height.px]="boardHeight()" [style.min-width.px]="boardMinWidth()">
+          @for (round of selectedStage()!.rounds; track round.id; let roundIndex = $index) {
+            <section class="bracket-round-column" [id]="'bracket-round-' + roundIndex" [style.margin-top.px]="roundTopMargin(roundIndex)" [style.--round-offset.px]="roundTopMargin(roundIndex)" [style.gap.px]="roundGap(roundIndex)" [attr.aria-label]="roundLabel(selectedStage()!, roundIndex)">
+              <header class="bracket-round-heading"><span>{{ roundLabel(selectedStage()!, roundIndex) }}</span><small>{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</small></header>
+              @for (match of round.matches; track match.id; let matchIndex = $index) {
+                <article class="bracket-game" [class.game-live]="match.status === 'in-progress'" [class.game-complete]="match.status === 'completed'" [class.game-bye]="match.status === 'bye'" [attr.aria-label]="'Jogo ' + (matchIndex + 1) + ': ' + participantLabel(selectedStage()!, roundIndex, matchIndex, 'a') + ' contra ' + participantLabel(selectedStage()!, roundIndex, matchIndex, 'b')">
+                  <div class="bracket-game-topline"><span>JOGO {{ matchIndex + 1 }}</span><span class="bracket-game-state">{{ match.status === 'in-progress' ? 'AO VIVO' : match.status === 'completed' ? 'FINAL' : match.status === 'bye' ? 'BYE' : 'PENDENTE' }}</span></div>
+                  <div class="bracket-game-player" [class.player-winner]="match.winnerId === match.playerAId && match.status !== 'pending' && match.status !== 'in-progress'" [class.player-placeholder]="!match.playerAId">
+                    <span [title]="participantLabel(selectedStage()!, roundIndex, matchIndex, 'a')">{{ participantLabel(selectedStage()!, roundIndex, matchIndex, 'a') }}</span><b>{{ match.playerAId ? match.scoreA : '—' }}</b>
+                  </div>
+                  <div class="bracket-game-player" [class.player-winner]="match.winnerId === match.playerBId && match.status !== 'pending' && match.status !== 'in-progress'" [class.player-placeholder]="!match.playerBId">
+                    <span [title]="participantLabel(selectedStage()!, roundIndex, matchIndex, 'b')">{{ participantLabel(selectedStage()!, roundIndex, matchIndex, 'b') }}</span><b>{{ match.playerBId ? match.scoreB : '—' }}</b>
+                  </div>
+                  @if (match.status === 'bye') { <span class="bracket-bye-note">Avança por bye</span> }
+                </article>
+              }
+            </section>
+            @if (roundIndex < selectedStage()!.rounds.length - 1) {
+              <svg class="bracket-connectors" [attr.width]="connectorWidth()" [attr.height]="boardHeight()" [attr.viewBox]="'0 0 ' + connectorWidth() + ' ' + boardHeight()" preserveAspectRatio="none" aria-hidden="true">
+                @for (path of connectorPaths(selectedStage()!, roundIndex); track $index) { <path [attr.d]="path"></path> }
+              </svg>
+            }
+          }
+        </div>
+      </div>
+      <footer class="bracket-display-footer"><span><i class="footer-dot live-dot"></i> Ao vivo</span><span><i class="footer-dot winner-dot"></i> Vencedor</span><span><i class="footer-dot pending-dot"></i> Aguardando resultado</span><span class="bracket-local-note">Atualização local neste navegador</span></footer>
+    }
+  }
+</section>

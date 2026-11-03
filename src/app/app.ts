@@ -12,13 +12,13 @@ import { TournamentStore } from './core/tournament-store.service';
 export class App {
   readonly store = inject(TournamentStore);
   private readonly router = inject(Router);
-  readonly displayMode = signal(this.router.url.startsWith('/display'));
+  readonly displayMode = signal(this.isPresentationRoute(this.router.url));
   readonly theme = signal<'dark' | 'light'>(this.loadTheme());
 
   constructor() {
     this.applyTheme(this.theme());
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event) => {
-      this.displayMode.set((event as NavigationEnd).urlAfterRedirects.startsWith('/display'));
+      this.displayMode.set(this.isPresentationRoute((event as NavigationEnd).urlAfterRedirects));
     });
   }
 
@@ -36,5 +36,9 @@ export class App {
 
   private applyTheme(theme: 'dark' | 'light'): void {
     if (typeof document !== 'undefined') document.documentElement.dataset['theme'] = theme;
+  }
+
+  private isPresentationRoute(url: string): boolean {
+    return url.startsWith('/display') || url.startsWith('/brackets');
   }
 }

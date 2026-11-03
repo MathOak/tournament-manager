@@ -5,12 +5,17 @@ import { BestOf, Player, SeedMode, StageFormat, Tournament, createEmptyTournamen
 const DATABASE_NAME = 'tournament-manager';
 const STORE_NAME = 'documents';
 const DOCUMENT_KEY = 'active-tournament';
+const SELECTED_KEY = 'selected-tournament-id';
 const LOCAL_FALLBACK_KEY = 'tournament-manager-document-v1';
+const LOCAL_COLLECTION_KEY = 'tournament-manager-tournaments-v1';
+const LOCAL_SELECTED_KEY = 'tournament-manager-selected-id';
 
 @Injectable({ providedIn: 'root' })
 export class TournamentStore {
   private readonly state = signal<Tournament>(createEmptyTournament());
   readonly tournament = this.state.asReadonly();
+  readonly tournaments = signal<Tournament[]>([]);
+  readonly selectedTournamentId = signal('');
   readonly playerCount = computed(() => this.state().players.length);
   readonly matchCount = computed(() => this.state().stages.reduce(
     (count, stage) => count + stage.rounds.reduce((roundCount, round) => roundCount + round.matches.length, 0), 0,
@@ -32,6 +37,42 @@ export class TournamentStore {
       return;
     }
     this.commit((current) => ({ ...current, name: cleanName, game: cleanGame }));
+  }
+
+  createTournament(): Tournament {
+    const tournament = createEmptyTournament();
+    const suffix = this.tournaments().length + 1;
+    tournament.name = `Meu torneio ${suffix}`;
+    tournament.game = '';
+    this.tournaments.update((items) => [...items, tournament]);
+    this.state.set(tournament);
+    this.selectedTournamentId.set(tournament.id);
+    this.notice.set('Novo campeonato criado. Configure o nome e o jogo.');
+    void this.persistCollection();
+    return tournament;
+  }
+
+  selectTournament(tournamentId: string): boolean {
+    const selected = this.tournaments().find((item) => item.id === tournamentId);
+    if (!selected) return false;
+    this.state.set(selected);
+    this.selectedTournamentId.set(selected.id);
+    this.notice.set('');
+    void this.persistCollection();
+    return true;
+  }
+
+  removeTournament(tournamentId: string): boolean {
+    const items = this.tournaments();
+    if (items.length <= 1 || !items.some((item) => item.id === tournamentId)) return false;
+    const remaining = items.filter((item) => item.id !== tournamentId);
+    this.tournaments.set(remaining);
+    if (this.selectedTournamentId() === tournamentId) {
+      this.state.set(remaining[0]);
+      this.selectedTournamentId.set(remaining[0].id);
+    }
+    void this.persistCollection();
+    return true;
   }
 
   addPlayer(displayName: string, gameHandle = ''): boolean {
@@ -166,14 +207,21 @@ export class TournamentStore {
     return JSON.stringify(this.state(), null, 2);
   }
 
-  importJson(json: string): boolean {
+  importJson(json: string, replaceExisting = false): boolean {
     try {
       const parsed: unknown = JSON.parse(json);
       if (!isTournament(parsed)) throw new Error('Formato inválido');
+      const duplicate = this.tournaments().some((item) => item.id === parsed.id);
+      const replaceDuplicate = duplicate && replaceExisting;
+      if (duplicate && !replaceDuplicate) parsed.id = createId();
       parsed.updatedAt = new Date().toISOString();
+      this.tournaments.update((items) => replaceDuplicate
+        ? items.map((item) => item.id === parsed.id ? parsed : item)
+        : [...items, parsed]);
       this.state.set(parsed);
+      this.selectedTournamentId.set(parsed.id);
       this.notice.set('Torneio importado com sucesso.');
-      void this.persist(parsed);
+      void this.persistCollection();
       return true;
     } catch {
       this.notice.set('Arquivo JSON inválido ou versão não suportada. Os dados atuais foram mantidos.');
@@ -207,9 +255,20 @@ export class TournamentStore {
 
   private async load(): Promise<void> {
     try {
-      const value = await this.readFromDatabase();
-      if (isTournament(value)) this.state.set(value);
-      else await this.loadFallback();
+      const values = await this.readAllFromDatabase();
+      let tournaments = uniqueTournaments(values.filter(isTournament));
+      let selectedId = await this.readSelectedId();
+      if (!tournaments.length) {
+        const fallback = this.readFallbackCollection();
+        tournaments = fallback.tournaments;
+        selectedId ||= fallback.selectedId;
+      }
+      if (!tournaments.length) tournaments = [createEmptyTournament()];
+      const selected = tournaments.find((item) => item.id === selectedId) ?? tournaments[0];
+      this.tournaments.set(tournaments);
+      this.selectedTournamentId.set(selected.id);
+      this.state.set(selected);
+      await this.persistCollection(false);
     } catch {
       await this.loadFallback();
     } finally {
@@ -219,11 +278,13 @@ export class TournamentStore {
 
   private async loadFallback(): Promise<void> {
     try {
-      const raw = localStorage.getItem(LOCAL_FALLBACK_KEY);
-      if (raw) {
-        const value: unknown = JSON.parse(raw);
-        if (isTournament(value)) this.state.set(value);
-      }
+      const fallback = this.readFallbackCollection();
+      const tournaments = fallback.tournaments.length ? fallback.tournaments : [createEmptyTournament()];
+      const selected = tournaments.find((item) => item.id === fallback.selectedId) ?? tournaments[0];
+      this.tournaments.set(tournaments);
+      this.selectedTournamentId.set(selected.id);
+      this.state.set(selected);
+      await this.persistCollection(false);
     } catch {
       this.notice.set('Não foi possível carregar os dados locais salvos.');
     } finally {
@@ -235,11 +296,15 @@ export class TournamentStore {
     const updated = updater(this.state());
     updated.updatedAt = new Date().toISOString();
     this.state.set(updated);
+    this.tournaments.update((items) => items.some((item) => item.id === updated.id)
+      ? items.map((item) => item.id === updated.id ? updated : item)
+      : [...items, updated]);
+    this.selectedTournamentId.set(updated.id);
     this.notice.set('');
-    void this.persist(updated);
+    void this.persistCollection();
   }
 
-  private async persist(tournament: Tournament): Promise<void> {
+  private async persistCollection(notifyOtherTabs = true): Promise<void> {
     try {
       if (!this.database && typeof indexedDB !== 'undefined') {
         await new Promise<void>((resolve, reject) => {
@@ -254,25 +319,54 @@ export class TournamentStore {
       if (this.database) {
         await new Promise<void>((resolve, reject) => {
           const transaction = this.database!.transaction(STORE_NAME, 'readwrite');
-          transaction.objectStore(STORE_NAME).put(tournament, DOCUMENT_KEY);
+          const store = transaction.objectStore(STORE_NAME);
+          store.clear();
+          for (const tournament of this.tournaments()) store.put(tournament, tournament.id);
+          store.put(this.selectedTournamentId(), SELECTED_KEY);
           transaction.oncomplete = () => resolve();
           transaction.onerror = () => reject(transaction.error);
         });
       }
-      localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(tournament));
-      this.channel?.postMessage({ type: 'updated' });
+      const selected = this.tournaments().find((item) => item.id === this.selectedTournamentId()) ?? this.state();
+      localStorage.setItem(LOCAL_COLLECTION_KEY, JSON.stringify(this.tournaments()));
+      localStorage.setItem(LOCAL_SELECTED_KEY, selected.id);
+      localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(selected));
+      if (notifyOtherTabs) this.channel?.postMessage({ type: 'updated' });
     } catch {
       this.notice.set('Não foi possível salvar no navegador. Exporte uma cópia de segurança.');
     }
   }
 
-  private readFromDatabase(): Promise<unknown> {
+  private readAllFromDatabase(): Promise<unknown[]> {
     return new Promise((resolve, reject) => {
-      if (!this.database) return resolve(null);
-      const request = this.database.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(DOCUMENT_KEY);
+      if (!this.database) return resolve([]);
+      const request = this.database.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
+  }
+
+  private readSelectedId(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (!this.database) return resolve('');
+      const request = this.database.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(SELECTED_KEY);
+      request.onsuccess = () => resolve(typeof request.result === 'string' ? request.result : '');
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  private readFallbackCollection(): { tournaments: Tournament[]; selectedId: string } {
+    try {
+      const rawCollection = localStorage.getItem(LOCAL_COLLECTION_KEY);
+      const parsedCollection: unknown = rawCollection ? JSON.parse(rawCollection) : [];
+      const tournaments = Array.isArray(parsedCollection) ? uniqueTournaments(parsedCollection.filter(isTournament)) : [];
+      if (tournaments.length) return { tournaments, selectedId: localStorage.getItem(LOCAL_SELECTED_KEY) ?? '' };
+      const rawLegacy = localStorage.getItem(LOCAL_FALLBACK_KEY);
+      const legacy: unknown = rawLegacy ? JSON.parse(rawLegacy) : null;
+      return { tournaments: isTournament(legacy) ? [legacy] : [], selectedId: isTournament(legacy) ? legacy.id : '' };
+    } catch {
+      return { tournaments: [], selectedId: '' };
+    }
   }
 }
 
@@ -299,4 +393,8 @@ function isTournament(value: unknown): value is Tournament {
             (match.winnerId === null || typeof match.winnerId === 'string') &&
             (match.status === 'pending' || match.status === 'in-progress' || match.status === 'completed' || match.status === 'bye')));
     });
+}
+
+function uniqueTournaments(tournaments: Tournament[]): Tournament[] {
+  return [...new Map(tournaments.map((tournament) => [tournament.id, tournament])).values()];
 }

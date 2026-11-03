@@ -1,45 +1,52 @@
 <section class="bracket-display-page" [class.bracket-embedded]="embedded" aria-label="Chaves do campeonato" [style.--bracket-card-height.px]="matchHeight()" [style.--bracket-gap.px]="baseGap()" [style.--bracket-connector-width.px]="connectorWidth()" [style.--bracket-min-column-width.px]="viewportSize().width < 600 ? 205 : 214">
   <header class="bracket-display-header">
-    @if (!embedded) { <a class="bracket-brand" routerLink="/" aria-label="Voltar ao dashboard"><span class="bracket-brand-mark">TM</span><span>TOURNAMENT <b>MANAGER</b></span></a> }
-    <div class="bracket-heading">
-      <p class="bracket-kicker">VISUALIZAÇÃO DE CAMPEONATO</p>
-      <h1>Chaves</h1>
-    </div>
     @if (!embedded) {
-      <nav class="bracket-inline-nav" aria-label="Navegação do campeonato">
+      <a class="brand" routerLink="/" aria-label="Tournament Manager — início"><span class="brand-mark">TM</span><span>Tournament<span class="brand-light">Manager</span></span></a>
+      <nav class="main-nav bracket-main-nav" aria-label="Navegação principal">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
         <a routerLink="/players" routerLinkActive="active">Jogadores</a>
         <a routerLink="/tournament" routerLinkActive="active">Torneio</a>
         <a routerLink="/brackets" routerLinkActive="active">Chaves</a>
         <a routerLink="/admin" routerLinkActive="active">Admin</a>
       </nav>
-    }
-    <div class="bracket-toolbar-controls">
-      <label class="bracket-select-label" for="championship-select">Campeonato
-        <select id="championship-select" [value]="store.selectedTournamentId()" [disabled]="!store.ready() || store.tournaments().length < 2" (change)="selectTournament($event)" aria-label="Selecionar campeonato">
-          @for (tournament of store.tournaments(); track tournament.id) {
-            <option [value]="tournament.id">{{ tournament.name }}{{ tournament.game ? ' · ' + tournament.game : '' }}</option>
-          }
-        </select>
-      </label>
-      @if (eliminationStages().length > 1) {
-        <label class="bracket-select-label" for="stage-select">Chave
-          <select id="stage-select" [value]="selectedStage()!.id" (change)="selectStage($event)" aria-label="Selecionar chave eliminatória">
-            @for (stage of eliminationStages(); track stage.id) { <option [value]="stage.id">{{ stage.name }}</option> }
+      <button class="theme-toggle" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'">
+        <span aria-hidden="true">{{ theme() === 'dark' ? '☀' : '☾' }}</span>{{ theme() === 'dark' ? 'Claro' : 'Escuro' }}
+      </button>
+      <span class="live-indicator bracket-local-indicator"><span></span> Dados locais</span>
+    } @else {
+      <div class="bracket-heading"><p class="bracket-kicker">VISUALIZAÇÃO DE CAMPEONATO</p><h1>Chaves</h1></div>
+      <div class="bracket-toolbar-controls">
+        <label class="bracket-select-label" for="championship-select">Campeonato
+          <select id="championship-select" [value]="store.selectedTournamentId()" [disabled]="!store.ready() || store.tournaments().length < 2" (change)="selectTournament($event)" aria-label="Selecionar campeonato">
+            @for (tournament of store.tournaments(); track tournament.id) { <option [value]="tournament.id">{{ tournament.name }}{{ tournament.game ? ' · ' + tournament.game : '' }}</option> }
           </select>
         </label>
-      }
-      @if (!embedded) {
-        <button class="bracket-control-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'">
-          <span aria-hidden="true">{{ theme() === 'dark' ? '☀' : '☾' }}</span>{{ theme() === 'dark' ? 'Claro' : 'Escuro' }}
-        </button>
-        <button class="bracket-control-button bracket-fullscreen-button" type="button" (click)="toggleFullscreen()">
-          <span aria-hidden="true">{{ fullscreen() ? '⛶' : '⛶' }}</span>{{ fullscreen() ? 'Sair da tela cheia' : 'Tela cheia' }}
-        </button>
-        <button class="bracket-control-button" type="button" (click)="createTournament()">+ Novo</button>
-      }
-    </div>
+      </div>
+    }
   </header>
+
+  @if (!embedded) {
+    <div class="bracket-control-band">
+      <div class="bracket-toolbar-controls">
+        <label class="bracket-select-label" for="championship-select">Campeonato
+          <select id="championship-select" [value]="store.selectedTournamentId()" [disabled]="!store.ready() || store.tournaments().length < 2" (change)="selectTournament($event)" aria-label="Selecionar campeonato">
+            @for (tournament of store.tournaments(); track tournament.id) { <option [value]="tournament.id">{{ tournament.name }}{{ tournament.game ? ' · ' + tournament.game : '' }}</option> }
+          </select>
+        </label>
+        @if (eliminationStages().length > 1) {
+          <label class="bracket-select-label" for="stage-select">Chave
+            <select id="stage-select" [value]="selectedStage()!.id" (change)="selectStage($event)" aria-label="Selecionar chave eliminatória">
+              @for (stage of eliminationStages(); track stage.id) { <option [value]="stage.id">{{ stage.name }}</option> }
+            </select>
+          </label>
+        }
+        <button class="button button-secondary bracket-fullscreen-button" type="button" (click)="toggleFullscreen()">
+          <span aria-hidden="true">⛶</span>{{ fullscreen() ? 'Sair da tela cheia' : 'Tela cheia' }}
+        </button>
+        <button class="button button-primary bracket-new-button" type="button" (click)="createTournament()">+ Novo campeonato</button>
+      </div>
+    </div>
+  }
 
   @if (fullscreenNotice()) { <p class="bracket-fullscreen-notice" role="status">{{ fullscreenNotice() }}</p> }
 

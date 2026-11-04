@@ -1,4 +1,4 @@
 <section class="dashboard-head" [class.display-head]="displayMode">
   <div class="event-brand"><span class="event-emblem">TM</span><div><p class="eyebrow">{{ tournament.game }} · TORNEIO AO VIVO</p><h1>{{ tournament.name }}</h1><p class="muted">{{ tournament.players.length }} jogadores <span class="dot-separator">•</span> {{ completedSeries }} séries concluídas</p></div></div>
-  <app-dashboard-actions [displayMode]="displayMode" (fullscreenRequested)="fullscreenRequested.emit()"></app-dashboard-actions>
+  <app-dashboard-actions [displayMode]="displayMode" displayLink="/display/dashboard" exitLink="/" (fullscreenRequested)="fullscreenRequested.emit()"></app-dashboard-actions>
 </section>

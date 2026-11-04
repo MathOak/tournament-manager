@@ -10,7 +10,7 @@
 ## Histórico de contexto para agentes
 
 - Antes de começar uma tarefa, consulte o resumo mais recente em `history/` (ordenado pelo caminho/nome com data-hora `YYYY-MM-DD/HH-mm-resumo-chat.md`) para conhecer decisões e alterações recentes feitas em conversas.
-- No momento desta atualização, o resumo é `history/2026-11-03/17-51-resumo-chat.md`.
+- No momento desta atualização, o resumo é `history/2026-11-04/11-50-resumo-chat.md`.
 - O histórico é contexto auxiliar: confirme sempre o código/documentos atuais antes de editar. Em caso de divergência, o estado atual do repositório prevalece.
 
 ## Stack e configuração

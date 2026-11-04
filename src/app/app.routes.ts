@@ -7,7 +7,9 @@ import { TournamentComponent } from './features/tournament/tournament.component'
 
 export const routes: Routes = [
 	{ path: '', component: DashboardComponent, title: 'Dashboard | Tournament Manager' },
-	{ path: 'display', component: DashboardComponent, data: { displayMode: true }, title: 'Modo telão | Tournament Manager' },
+	{ path: 'display', redirectTo: 'display/dashboard', pathMatch: 'full' },
+	{ path: 'display/dashboard', component: DashboardComponent, data: { displayMode: true }, title: 'Modo telão | Tournament Manager' },
+	{ path: 'display/brackets', component: BracketDisplayComponent, data: { displayMode: true }, title: 'Chaves no telão | Tournament Manager' },
 	{ path: 'brackets', component: BracketDisplayComponent, title: 'Chaves | Tournament Manager' },
 	{ path: 'players', component: PlayersComponent, title: 'Jogadores | Tournament Manager' },
 	{ path: 'tournament', component: TournamentComponent, title: 'Torneio | Tournament Manager' },

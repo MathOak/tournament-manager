@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -10,6 +10,13 @@ import { RouterLink } from '@angular/router';
 })
 export class DashboardActionsComponent {
   @Input() displayMode = false;
-  @Input() routerLink = '/display';
+  @Input() displayLink = '/display/dashboard';
+  @Input() exitLink = '/';
   @Output() readonly fullscreenRequested = new EventEmitter<void>();
+  readonly fullscreen = signal(typeof document !== 'undefined' && !!document.fullscreenElement);
+
+  @HostListener('document:fullscreenchange')
+  syncFullscreen(): void {
+    this.fullscreen.set(!!document.fullscreenElement);
+  }
 }

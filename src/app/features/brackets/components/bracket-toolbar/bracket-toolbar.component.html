@@ -1,11 +1,25 @@
 @if (embedded) {
   <div class="embedded-toolbar">
-    <div class="bracket-heading"><p class="bracket-kicker">VISUALIZAÇÃO DE CAMPEONATO</p><h1>Chaves</h1></div>
-    <app-select-menu label="Campeonato" [options]="tournamentOptions" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (valueChange)="tournamentSelected.emit($event)"></app-select-menu>
+    <div class="bracket-heading">
+      <p class="bracket-kicker">VISUALIZAÇÃO DE CAMPEONATO</p>
+      <h1>Chaves</h1>
+    </div>
+    <app-select-menu
+      label="Campeonato"
+      [options]="tournamentOptions"
+      [value]="selectedTournamentId"
+      [disabled]="!ready || tournaments.length < 2"
+      (valueChange)="tournamentSelected.emit($event)"
+    ></app-select-menu>
   </div>
 } @else {
-  <app-dashboard-actions [displayMode]="displayMode" (fullscreenRequested)="fullscreenRequested.emit()"></app-dashboard-actions>
- <!--  <div class="bracket-control-band">
+  <app-dashboard-actions
+    [displayMode]="displayMode"
+    displayLink="/display/brackets"
+    exitLink="/brackets"
+    (fullscreenRequested)="fullscreenRequested.emit()"
+  ></app-dashboard-actions>
+  <!--  <div class="bracket-control-band">
     <div class="bracket-toolbar-controls">
       <app-select-menu label="Campeonato" [options]="tournamentOptions" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (valueChange)="tournamentSelected.emit($event)"></app-select-menu>
       @if (stages.length > 1) {

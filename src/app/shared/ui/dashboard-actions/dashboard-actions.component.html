@@ -1,9 +1,24 @@
 <div class="dashboard-actions">
   @if (displayMode) {
-    <button class="button button-glass" type="button" (click)="fullscreenRequested.emit()">
-      ⛶ Tela cheia</button
-    ><a class="button button-glass" routerLink="/">Sair do telão</a>
+    <button class="button action-outline" type="button" (click)="fullscreenRequested.emit()">
+      <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+        @if (fullscreen()) {
+          <path d="M3 9h6V3M9 9L3 3M21 9h-6V3M15 9l6-6M3 15h6v6M9 15l-6 6M21 15h-6v6M15 15l6 6" />
+        } @else {
+          <path d="M9 3H3v6M3 3l6 6M15 3h6v6M21 3l-6 6M9 21H3v-6M3 21l6-6M15 21h6v-6M21 21l-6-6" />
+        }
+      </svg>
+      {{ fullscreen() ? 'Sair da tela cheia' : 'Tela cheia' }}
+    </button>
+    @if (!fullscreen()) {
+      <a class="button action-muted" [routerLink]="exitLink">Sair do telão</a>
+    }
   } @else {
-    <a class="button button-secondary" routerLink="/display">⛶ Modo telão</a>
+    <a class="button action-solid" [routerLink]="displayLink">
+      <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 3H3v6M3 3l6 6M15 3h6v6M21 3l-6 6M9 21H3v-6M3 21l6-6M15 21h6v-6M21 21l-6-6" />
+      </svg>
+      Modo telão
+    </a>
   }
 </div>

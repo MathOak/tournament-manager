@@ -1,5 +1,13 @@
 .dashboard-actions { display: flex; gap: 9px; flex-wrap: wrap; }
-.button-glass { color: var(--text); background: var(--surface); border-color: var(--border); }
+.button { border: 1px solid transparent; text-decoration: none; }
+.button:focus-visible { outline: 2px solid var(--accent-interactive); outline-offset: 2px; }
+.action-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.action-solid { color: #fff; background: var(--accent-primary); border-color: var(--accent-primary); box-shadow: 0 6px 18px color-mix(in srgb, var(--accent-primary) 35%, transparent); }
+.action-solid:hover { background: var(--accent-primary-hover); border-color: var(--accent-primary-hover); }
+.action-outline { color: var(--accent-interactive); background: color-mix(in srgb, var(--accent-interactive) 12%, var(--surface)); border-color: var(--accent-interactive); }
+.action-outline:hover { background: color-mix(in srgb, var(--accent-interactive) 22%, var(--surface)); }
+.action-muted { color: var(--text); background: var(--surface-raised); border-color: var(--border-strong); }
+.action-muted:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
 @media (max-width: 760px) {
   .dashboard-actions { width: 100%; }
   .dashboard-actions .button { flex: 1; }

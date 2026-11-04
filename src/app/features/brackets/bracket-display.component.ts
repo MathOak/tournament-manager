@@ -1,5 +1,5 @@
 import { Component, HostListener, Input, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TournamentStore } from '../../core/tournament-store.service';
 import { Stage } from '../../domain/tournament.model';
 import { BracketConnectorsComponent } from './components/bracket-connectors/bracket-connectors.component';
@@ -21,6 +21,7 @@ const MIN_COLUMN_WIDTH = 214;
 })
 export class BracketDisplayComponent {
   @Input() embedded = false;
+  readonly displayMode = inject(ActivatedRoute, { optional: true })?.snapshot.data['displayMode'] === true;
 
   readonly store = inject(TournamentStore);
   readonly eliminationStages = computed(() => this.store.tournament().stages.filter((stage) => stage.format === 'single-elimination'));

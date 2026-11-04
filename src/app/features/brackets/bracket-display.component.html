@@ -7,7 +7,7 @@
     </header>
   }
 
-  @if (!embedded) { <app-bracket-toolbar [ready]="store.ready()" [fullscreen]="fullscreen()" [tournaments]="store.tournaments()" [selectedTournamentId]="store.selectedTournamentId()" [stages]="eliminationStages()" [selectedStageId]="selectedStageId()" (tournamentSelected)="selectTournament($event)" (stageSelected)="selectStage($event)" (fullscreenToggled)="toggleFullscreen()" (tournamentCreated)="createTournament()" /> }
+  @if (!embedded) { <app-bracket-toolbar [ready]="store.ready()" [fullscreen]="fullscreen()" [displayMode]="displayMode" [tournaments]="store.tournaments()" [selectedTournamentId]="store.selectedTournamentId()" [stages]="eliminationStages()" [selectedStageId]="selectedStageId()" (tournamentSelected)="selectTournament($event)" (stageSelected)="selectStage($event)" (fullscreenRequested)="toggleFullscreen()" (tournamentCreated)="createTournament()" /> }
 
   @if (fullscreenNotice()) { <p class="bracket-fullscreen-notice" role="status">{{ fullscreenNotice() }}</p> }
 

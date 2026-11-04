@@ -2,7 +2,6 @@ import { Component, HostListener, Input, computed, inject, signal } from '@angul
 import { RouterLink } from '@angular/router';
 import { TournamentStore } from '../../core/tournament-store.service';
 import { Stage } from '../../domain/tournament.model';
-import { AppHeaderComponent } from '../../shared/layout/app-header/app-header.component';
 import { BracketConnectorsComponent } from './components/bracket-connectors/bracket-connectors.component';
 import { BracketRoundColumnComponent } from './components/bracket-round-column/bracket-round-column.component';
 import { BracketRoundTabsComponent } from './components/bracket-round-tabs/bracket-round-tabs.component';
@@ -17,7 +16,7 @@ const MIN_COLUMN_WIDTH = 214;
 @Component({
   selector: 'app-bracket-display',
   standalone: true,
-  imports: [RouterLink, AppHeaderComponent, BracketConnectorsComponent, BracketRoundColumnComponent, BracketRoundTabsComponent, BracketEventSummaryComponent, BracketLegendComponent, EmptyStateComponent, BracketToolbarComponent],
+  imports: [RouterLink, BracketConnectorsComponent, BracketRoundColumnComponent, BracketRoundTabsComponent, BracketEventSummaryComponent, BracketLegendComponent, EmptyStateComponent, BracketToolbarComponent],
   templateUrl: './bracket-display.component.html',
 })
 export class BracketDisplayComponent {

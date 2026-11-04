@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Stage, Tournament } from '../../../../domain/tournament.model';
 import { SelectMenuComponent, SelectMenuOption } from '../../../../shared/ui/select-menu/select-menu.component';
+import { DashboardActionsComponent } from '../../../../shared/ui/dashboard-actions/dashboard-actions.component';
 
 @Component({
   selector: 'app-bracket-toolbar',
   standalone: true,
-  imports: [SelectMenuComponent],
+  imports: [SelectMenuComponent, DashboardActionsComponent],
   templateUrl: './bracket-toolbar.component.html',
   styleUrl: './bracket-toolbar.component.css',
 })
@@ -17,9 +18,10 @@ export class BracketToolbarComponent {
   @Input() selectedTournamentId = '';
   @Input() stages: Stage[] = [];
   @Input() selectedStageId = '';
+  @Input() displayMode = false;
   @Output() readonly tournamentSelected = new EventEmitter<string>();
   @Output() readonly stageSelected = new EventEmitter<string>();
-  @Output() readonly fullscreenToggled = new EventEmitter<void>();
+  @Output() readonly fullscreenRequested = new EventEmitter<void>();
   @Output() readonly tournamentCreated = new EventEmitter<void>();
 
   get tournamentOptions(): SelectMenuOption[] {

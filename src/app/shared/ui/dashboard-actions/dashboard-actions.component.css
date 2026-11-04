@@ -1,0 +1,6 @@
+.dashboard-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+.button-glass { color: var(--text); background: var(--surface); border-color: var(--border); }
+@media (max-width: 760px) {
+  .dashboard-actions { width: 100%; }
+  .dashboard-actions .button { flex: 1; }
+}

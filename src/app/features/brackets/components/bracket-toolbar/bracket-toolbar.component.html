@@ -4,7 +4,8 @@
     <app-select-menu label="Campeonato" [options]="tournamentOptions" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (valueChange)="tournamentSelected.emit($event)"></app-select-menu>
   </div>
 } @else {
-  <div class="bracket-control-band">
+  <app-dashboard-actions [displayMode]="displayMode" (fullscreenRequested)="fullscreenRequested.emit()"></app-dashboard-actions>
+ <!--  <div class="bracket-control-band">
     <div class="bracket-toolbar-controls">
       <app-select-menu label="Campeonato" [options]="tournamentOptions" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (valueChange)="tournamentSelected.emit($event)"></app-select-menu>
       @if (stages.length > 1) {
@@ -13,5 +14,5 @@
       <button class="button button-secondary bracket-fullscreen-button" type="button" (click)="fullscreenToggled.emit()"><span aria-hidden="true">⛶</span>{{ fullscreen ? 'Sair da tela cheia' : 'Tela cheia' }}</button>
       <button class="button button-primary bracket-new-button" type="button" (click)="tournamentCreated.emit()">+ Novo campeonato</button>
     </div>
-  </div>
+  </div> -->
 }

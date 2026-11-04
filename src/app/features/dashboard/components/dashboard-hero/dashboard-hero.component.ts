@@ -1,11 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { Tournament } from '../../../../domain/tournament.model';
+import { DashboardActionsComponent } from '../../../../shared/ui/dashboard-actions/dashboard-actions.component';
 
 @Component({
   selector: 'app-dashboard-hero',
   standalone: true,
-  imports: [RouterLink],
+  imports: [DashboardActionsComponent],
   templateUrl: './dashboard-hero.component.html',
   styleUrl: './dashboard-hero.component.css',
 })

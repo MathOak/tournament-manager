@@ -1,10 +1,22 @@
 <app-page-heading kicker="CENTRAL DE OPERAÇÃO" title="Gerenciar partidas" description="Atualize placares e confirme resultados. O dashboard acompanha as mudanças automaticamente."><span class="admin-badge">ADMIN</span></app-page-heading>
 
+<section class="panel admin-toolbar" aria-label="Gerenciar campeonatos">
+  <div class="admin-selectors"><app-select-menu label="Campeonato" [options]="tournamentOptions()" [value]="store.selectedTournamentId()" (valueChange)="selectTournament($event)"></app-select-menu></div>
+  <div class="match-footer">
+    <button class="button button-secondary button-small" type="button" (click)="createTournament()">Novo campeonato</button>
+    <button class="button button-secondary button-small" type="button" (click)="exportTournament()">Exportar JSON</button>
+    <button class="button button-secondary button-small" type="button" (click)="importFile.click()">Importar JSON</button>
+    <input #importFile type="file" accept="application/json,.json" hidden (change)="importTournament($event)">
+    <button class="button button-secondary button-small" type="button" (click)="removeTournament()">Excluir campeonato</button>
+    <button class="button button-secondary button-small" type="button" (click)="clearAll()">Limpar dados do sistema</button>
+  </div>
+</section>
+
 @if (store.tournament().stages.length === 0) {
   <app-empty-state icon="⌘" title="Nenhuma etapa pronta" description="Cadastre participantes e crie uma etapa para iniciar o controle das partidas."><a class="button button-primary" routerLink="/tournament">Configurar torneio</a></app-empty-state>
 } @else if (activeStage(); as stage) {
   <section class="admin-toolbar panel">
-    <div class="admin-selectors"><label for="admin-stage">Etapa<select id="admin-stage" [ngModel]="stage.id" (ngModelChange)="selectStage($event)"><option [ngValue]="stage.id">{{ stage.name }}</option>@for (other of store.tournament().stages; track other.id) { @if (other.id !== stage.id) { <option [ngValue]="other.id">{{ other.name }}</option> } }</select></label><div class="admin-round-label"><span class="eyebrow">RODADA EM FOCO</span><strong>{{ currentRound() ? 'Rodada ' + currentRound()!.number : 'Sem partidas' }}</strong></div></div>
+    <div class="admin-selectors"><app-select-menu label="Etapa" [options]="stageOptions()" [value]="stage.id" [showThumbnail]="false" (valueChange)="selectStage($event)"></app-select-menu><div class="admin-round-label"><span class="eyebrow">RODADA EM FOCO</span><strong>{{ currentRound() ? 'Rodada ' + currentRound()!.number : 'Sem partidas' }}</strong></div></div>
     <div class="admin-counters"><span><b>{{ openCount() }}</b> abertas</span><span><b>{{ liveCount() }}</b> ao vivo</span><span><b>{{ completedCount() }}</b> concluídas</span></div>
   </section>
   <nav class="round-tabs" aria-label="Selecionar rodada">

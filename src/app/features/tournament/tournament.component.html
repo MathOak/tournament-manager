@@ -13,10 +13,9 @@
   <section class="panel form-panel">
     <div class="panel-heading"><div><p class="eyebrow">NOVA ETAPA</p><h2>Criar chave</h2></div><span class="step-number">02</span></div>
     <form (ngSubmit)="createStage()">
-      <label for="format">Formato</label>
-      <select id="format" name="format" [(ngModel)]="format"><option value="swiss">Sistema suíço</option><option value="single-elimination">Eliminação simples</option></select>
+      <app-select-menu label="Formato" [options]="formatOptions" [value]="format" [showThumbnail]="false" (valueChange)="format = $any($event)"></app-select-menu>
       <div class="field-row">
-        <div><label for="best-of">Formato da partida</label><select id="best-of" name="bestOf" [(ngModel)]="bestOf"><option [ngValue]="3">MD3</option><option [ngValue]="5">MD5</option></select></div>
+        <div><app-select-menu label="Formato da partida" [options]="bestOfOptions" [value]="'' + bestOf" [showThumbnail]="false" (valueChange)="bestOf = +$event === 5 ? 5 : 3"></app-select-menu></div>
         @if (format === 'swiss') { <div><label for="round-count">Rodadas suíças</label><input id="round-count" name="rounds" type="number" min="1" max="20" [(ngModel)]="rounds"></div> }
       </div>
       <p class="form-hint">Os participantes são embaralhados para o sorteio inicial. O sistema suíço cria a rodada seguinte após os resultados da atual.</p>
@@ -42,10 +41,10 @@
   <section class="qualification-panel panel">
     <div class="panel-heading"><div><p class="eyebrow">PRÓXIMA FASE</p><h2>Classificar para eliminatória</h2><p class="muted">A fase suíça permanece salva; esta ação cria uma nova etapa com os participantes escolhidos.</p></div><span class="step-number">03</span></div>
     <div class="qualification-controls">
-      <label for="source-swiss">Fase suíça<select id="source-swiss" [ngModel]="sourceSwiss?.id ?? ''" (ngModelChange)="onSourceStageChange($event)"><option value="">Selecione a etapa</option>@for (stage of completedSwissStages; track stage.id) { <option [value]="stage.id">{{ stage.name }}</option> }</select></label>
-      <label for="top-count">Classificar entre<select id="top-count" [ngModel]="topCount" (ngModelChange)="topCount = +$event; selectTopClassified()"><option [ngValue]="2">Top 2</option><option [ngValue]="4">Top 4</option><option [ngValue]="8">Top 8</option><option [ngValue]="16">Top 16</option></select></label>
-      <label for="qualifier-bestof">Formato das partidas<select id="qualifier-bestof" [(ngModel)]="qualificationBestOf"><option [ngValue]="3">MD3</option><option [ngValue]="5">MD5</option></select></label>
-      <label for="seed-method">Distribuição dos seeds<select id="seed-method" [(ngModel)]="seedMode"><option value="standings">Seguir classificação suíça</option><option value="random">Sortear classificados</option><option value="manual">Ajustar ordem manualmente</option></select></label>
+      <app-select-menu label="Fase suíça" placeholder="Selecione a etapa" [options]="swissStageOptions" [value]="sourceSwiss?.id ?? ''" [showThumbnail]="false" (valueChange)="onSourceStageChange($event)"></app-select-menu>
+      <app-select-menu label="Classificar entre" [options]="topCountOptions" [value]="'' + topCount" [showThumbnail]="false" (valueChange)="topCount = +$event; selectTopClassified()"></app-select-menu>
+      <app-select-menu label="Formato das partidas" [options]="bestOfOptions" [value]="'' + qualificationBestOf" [showThumbnail]="false" (valueChange)="qualificationBestOf = +$event === 5 ? 5 : 3"></app-select-menu>
+      <app-select-menu label="Distribuição dos seeds" [options]="seedModeOptions" [value]="seedMode" [showThumbnail]="false" (valueChange)="seedMode = $any($event)"></app-select-menu>
     </div>
     @if (sourceSwiss) {
       @if (selectedBoundaryTie) { <div class="tie-notice" role="note"><strong>Empate no corte de classificação.</strong><span>Revise os participantes selecionados e confirme manualmente quem avança.</span><label class="confirm-tie"><input type="checkbox" [(ngModel)]="tieDecisionConfirmed"> Confirmo esta seleção de classificados</label></div> }

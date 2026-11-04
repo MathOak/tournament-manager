@@ -35,6 +35,15 @@ describe('TournamentStore', () => {
     expect(store.matchCount()).toBe(0);
   });
 
+  it('clears every tournament and player, leaving one empty tournament persisted', () => {
+    store.addPlayer('Ana');
+    store.createTournament();
+    store.clearAll();
+    expect(store.tournaments()).toHaveLength(1);
+    expect(store.playerCount()).toBe(0);
+    expect(JSON.parse(localStorage.getItem(COLLECTION_KEY)!)).toHaveLength(1);
+  });
+
   it('trims tournament details and rejects blank names or game labels', () => {
     store.updateTournamentDetails('  Cup  ', '  Chess  ');
     expect(store.tournament()).toMatchObject({ name: 'Cup', game: 'Chess' });

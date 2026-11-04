@@ -245,7 +245,7 @@ input::placeholder { color: var(--text-muted); }
 .admin-selectors { display: flex; align-items: end; gap: 16px; }
 .admin-selectors label { display: grid; gap: 7px; color: var(--text-muted); font-size: 10px; font-weight: 750; }
 .admin-selectors select { min-width: 230px; }
-.admin-round-label { display: flex; flex-direction: column; gap: 5px; }
+.admin-round-label { display: flex; flex-direction: column; gap: 5px; width: 18rem; }
 .admin-round-label .eyebrow { margin: 0; }
 .admin-round-label strong { font-size: 12px; }
 .admin-counters { display: flex; gap: 14px; color: var(--text-muted); font-size: 10px; }

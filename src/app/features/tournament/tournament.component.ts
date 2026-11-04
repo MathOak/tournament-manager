@@ -5,15 +5,27 @@ import { BestOf, SeedMode, Stage, StageFormat } from '../../domain/tournament.mo
 import { TournamentStore } from '../../core/tournament-store.service';
 import { PageHeadingComponent } from '../../shared/ui/page-heading/page-heading.component';
 import { StatusBadgeComponent } from '../../shared/ui/status-badge/status-badge.component';
+import { SelectMenuComponent, SelectMenuOption } from '../../shared/ui/select-menu/select-menu.component';
 
 @Component({
   selector: 'app-tournament-setup',
   standalone: true,
-  imports: [FormsModule, PageHeadingComponent, StatusBadgeComponent],
+  imports: [FormsModule, PageHeadingComponent, StatusBadgeComponent, SelectMenuComponent],
   templateUrl: './tournament.component.html',
 })
 export class TournamentComponent {
   readonly store = inject(TournamentStore);
+  readonly formatOptions: SelectMenuOption[] = [
+    { value: 'swiss', title: 'Sistema suíço' },
+    { value: 'single-elimination', title: 'Eliminação simples' },
+  ];
+  readonly bestOfOptions: SelectMenuOption[] = [{ value: '3', title: 'MD3' }, { value: '5', title: 'MD5' }];
+  readonly topCountOptions: SelectMenuOption[] = [2, 4, 8, 16].map((count) => ({ value: String(count), title: `Top ${count}` }));
+  readonly seedModeOptions: SelectMenuOption[] = [
+    { value: 'standings', title: 'Seguir classificação suíça' },
+    { value: 'random', title: 'Sortear classificados' },
+    { value: 'manual', title: 'Ajustar ordem manualmente' },
+  ];
   tournamentName = this.store.tournament().name;
   game = this.store.tournament().game;
   format: StageFormat = 'swiss';
@@ -42,6 +54,10 @@ export class TournamentComponent {
   get completedSwissStages(): Stage[] {
     return this.store.tournament().stages.filter((stage) => stage.format === 'swiss' &&
       stage.rounds.length >= stage.totalRounds && !stage.rounds.some((round) => round.matches.some((match) => match.status === 'pending' || match.status === 'in-progress')));
+  }
+
+  get swissStageOptions(): SelectMenuOption[] {
+    return this.completedSwissStages.map((stage) => ({ value: stage.id, title: stage.name }));
   }
 
   get sourceSwiss(): Stage | undefined {

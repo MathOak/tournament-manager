@@ -229,6 +229,15 @@ export class TournamentStore {
     }
   }
 
+  clearAll(): void {
+    const empty = createEmptyTournament();
+    this.tournaments.set([empty]);
+    this.state.set(empty);
+    this.selectedTournamentId.set(empty.id);
+    this.notice.set('Todos os jogadores e torneios foram removidos.');
+    void this.persistCollection();
+  }
+
   dismissNotice(): void {
     this.notice.set('');
   }

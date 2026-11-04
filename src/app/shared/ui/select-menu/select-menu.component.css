@@ -1,0 +1,18 @@
+:host { position: relative; display: block; min-width: min(100%, 22rem); }
+.select-label { display: block; margin: 16px 0 7px; color: var(--color-text-secondary); font-size: 11px; font-weight: 700; }
+.select-trigger { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.75rem; background: var(--field); color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.select-trigger:hover, .select-trigger[aria-expanded='true'] { border-color: var(--border-strong); }
+.select-trigger:focus-visible { outline: 2px solid var(--accent-interactive); outline-offset: 2px; }
+.select-trigger:disabled { opacity: 0.55; cursor: not-allowed; }
+.select-caret { margin-left: auto; color: var(--text-muted); }
+.select-list { position: absolute; z-index: 20; inset-inline: 0; top: calc(100% + 0.4rem); margin: 0; padding: 0.4rem; max-height: 20rem; overflow-y: auto; list-style: none; border: 1px solid var(--border); border-radius: 0.9rem; background: var(--surface); box-shadow: 0 16px 40px rgb(0 0 0 / 0.35); }
+.select-option { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.7rem; border-radius: 0.65rem; cursor: pointer; }
+.select-option.active { background: var(--surface-raised); }
+.select-option.selected .select-title { color: var(--accent-interactive); }
+.select-thumb { display: grid; flex: none; place-items: center; width: 2.25rem; height: 2.25rem; overflow: hidden; border-radius: 0.6rem; background: var(--accent-soft); color: var(--accent-interactive); font-weight: 700; }
+.select-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.select-text { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; }
+.select-title { display: flex; align-items: center; gap: 0.5rem; overflow: hidden; color: var(--text); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.select-placeholder { color: var(--text-muted); font-weight: 400; }
+.select-subtitle { overflow: hidden; color: var(--text-muted); font-size: 0.85rem; text-overflow: ellipsis; white-space: nowrap; }
+.select-badge { padding: 0.05rem 0.5rem; border-radius: 999px; background: var(--accent-soft); color: var(--badge-highlight); font-size: 0.7rem; font-weight: 600; }

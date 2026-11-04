@@ -1,26 +1,14 @@
 @if (embedded) {
   <div class="embedded-toolbar">
     <div class="bracket-heading"><p class="bracket-kicker">VISUALIZAÇÃO DE CAMPEONATO</p><h1>Chaves</h1></div>
-    <label class="bracket-select-label" for="championship-select">Campeonato
-      <select id="championship-select" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (change)="tournamentSelected.emit($any($event.target).value)" aria-label="Selecionar campeonato">
-        @for (tournament of tournaments; track tournament.id) { <option [value]="tournament.id">{{ tournament.name }}{{ tournament.game ? ' · ' + tournament.game : '' }}</option> }
-      </select>
-    </label>
+    <app-select-menu label="Campeonato" [options]="tournamentOptions" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (valueChange)="tournamentSelected.emit($event)"></app-select-menu>
   </div>
 } @else {
   <div class="bracket-control-band">
     <div class="bracket-toolbar-controls">
-      <label class="bracket-select-label" for="championship-select">Campeonato
-        <select id="championship-select" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (change)="tournamentSelected.emit($any($event.target).value)" aria-label="Selecionar campeonato">
-          @for (tournament of tournaments; track tournament.id) { <option [value]="tournament.id">{{ tournament.name }}{{ tournament.game ? ' · ' + tournament.game : '' }}</option> }
-        </select>
-      </label>
+      <app-select-menu label="Campeonato" [options]="tournamentOptions" [value]="selectedTournamentId" [disabled]="!ready || tournaments.length < 2" (valueChange)="tournamentSelected.emit($event)"></app-select-menu>
       @if (stages.length > 1) {
-        <label class="bracket-select-label" for="stage-select">Chave
-          <select id="stage-select" [value]="selectedStageId" (change)="stageSelected.emit($any($event.target).value)" aria-label="Selecionar chave eliminatória">
-            @for (stage of stages; track stage.id) { <option [value]="stage.id">{{ stage.name }}</option> }
-          </select>
-        </label>
+        <app-select-menu label="Chave" [options]="stageOptions" [value]="selectedStageId" [showThumbnail]="false" (valueChange)="stageSelected.emit($event)"></app-select-menu>
       }
       <button class="button button-secondary bracket-fullscreen-button" type="button" (click)="fullscreenToggled.emit()"><span aria-hidden="true">⛶</span>{{ fullscreen ? 'Sair da tela cheia' : 'Tela cheia' }}</button>
       <button class="button button-primary bracket-new-button" type="button" (click)="tournamentCreated.emit()">+ Novo campeonato</button>

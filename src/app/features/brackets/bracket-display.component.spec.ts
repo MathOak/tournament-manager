@@ -61,7 +61,7 @@ describe('BracketDisplayComponent', () => {
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('#championship-select')?.textContent).toContain('Copa de Teste');
+    expect(element.querySelector('app-select-menu .select-trigger')?.textContent).toContain('Copa de Teste');
     expect(element.querySelectorAll('app-bracket-round-column')).toHaveLength(2);
     expect(element.querySelectorAll('.bracket-game')).toHaveLength(3);
     expect(element.querySelector('.bracket-connectors path')).toBeTruthy();
@@ -106,7 +106,7 @@ describe('BracketDisplayComponent', () => {
     expect(element.querySelectorAll('app-bracket-round-column')).toHaveLength(2);
     expect(element.querySelector('nav[aria-label="Navegação do campeonato"]')).toBeNull();
     expect(element.querySelector('.bracket-fullscreen-button')).toBeNull();
-    expect(element.querySelectorAll('#championship-select')).toHaveLength(1);
+    expect(element.querySelectorAll('app-select-menu')).toHaveLength(1);
   });
 
   it('reports a graceful message when fullscreen is unavailable', () => {

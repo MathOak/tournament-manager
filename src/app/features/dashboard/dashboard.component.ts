@@ -9,13 +9,12 @@ import { DashboardHeroComponent } from './components/dashboard-hero/dashboard-he
 import { TournamentStatsComponent } from './components/tournament-stats/tournament-stats.component';
 import { LiveMatchCardComponent } from './components/live-match-card/live-match-card.component';
 import { UpcomingMatchCardComponent } from './components/upcoming-match-card/upcoming-match-card.component';
-import { StageOverviewComponent } from './components/stage-overview/stage-overview.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, BracketDisplayComponent, DashboardHeroComponent, TournamentStatsComponent, LiveMatchCardComponent, UpcomingMatchCardComponent, StageOverviewComponent, EmptyStateComponent],
+  imports: [RouterLink, BracketDisplayComponent, DashboardHeroComponent, TournamentStatsComponent, LiveMatchCardComponent, UpcomingMatchCardComponent, EmptyStateComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {

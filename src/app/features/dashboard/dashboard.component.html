@@ -27,14 +27,4 @@
   @if (!isDisplayMode && tournament().stages.some(stage => stage.format === 'single-elimination')) {
     <app-bracket-display [embedded]="true" />
   }
-
-  <section class="competition-section">
-    <div class="section-heading"><div><p class="eyebrow">CHAVES E CLASSIFICAÇÃO</p><h2>Etapas do torneio</h2></div>@if (!isDisplayMode) { <a class="text-link" routerLink="/tournament">Gerenciar etapas →</a> }</div>
-    <div class="stage-grid">
-      @for (stage of tournament().stages; track stage.id) {
-        <app-stage-overview [stage]="stage" [players]="tournament().players" [records]="records()" />
-      }
-    </div>
-  </section>
-  <p class="local-sync-note"><i></i> Atualização local ativa · dados sincronizados neste navegador</p>
 }

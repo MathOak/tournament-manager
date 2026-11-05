@@ -1,9 +1,12 @@
-import { BestOf, Match, Player, Round, SeedMode, Stage, StageFormat, Tournament, createId } from './tournament.model';
+import { BestOf, Match, MatchGameResult, MatchPairing, PairingMode, Player, Round, ScoreMode, SeedMode, Stage, StageFormat, Tournament, createId } from './tournament.model';
 
 export interface MatchResult {
   winnerId: string;
   scoreA: number;
   scoreB: number;
+  penaltyScoreA?: number | null;
+  penaltyScoreB?: number | null;
+  gameResults?: MatchGameResult[];
 }
 
 export interface PlayerTournamentRecord {
@@ -14,13 +17,21 @@ export interface PlayerTournamentRecord {
   seriesLosses: number;
 }
 
+export function targetWins(bestOf: BestOf): number {
+  if (!Number.isInteger(bestOf) || bestOf < 1) return 0;
+  return bestOf === 1 ? 1 : bestOf === 2 ? 2 : Math.ceil(bestOf / 2);
+}
+
 export function validateMatchResult(
   match: Match,
   bestOf: BestOf,
   scoreA: number,
   scoreB: number,
+  scoreMode: ScoreMode = 'series-wins',
+  penaltyScoreA: number | null = null,
+  penaltyScoreB: number | null = null,
 ): MatchResult | null {
-  const target = bestOf === 3 ? 2 : 3;
+  const target = targetWins(bestOf);
   if (
     match.playerAId === null ||
     match.playerBId === null ||
@@ -28,14 +39,108 @@ export function validateMatchResult(
     !Number.isInteger(scoreB) ||
     scoreA < 0 ||
     scoreB < 0 ||
-    scoreA === scoreB ||
-    Math.max(scoreA, scoreB) !== target ||
-    Math.min(scoreA, scoreB) >= target
+    scoreMode === 'series-wins' && (scoreA === scoreB || Math.max(scoreA, scoreB) !== target || Math.min(scoreA, scoreB) >= target)
   ) {
     return null;
   }
 
+  if (scoreMode === 'goals') {
+    if (bestOf !== 1) return null;
+    if (scoreA !== scoreB) {
+      const winnerId = scoreA > scoreB ? match.playerAId : match.playerBId;
+      return { winnerId, scoreA: 1, scoreB: 0, gameResults: [{ scoreA, scoreB, winnerId }] };
+    }
+    if (!Number.isInteger(penaltyScoreA) || !Number.isInteger(penaltyScoreB) || penaltyScoreA === penaltyScoreB || penaltyScoreA! < 0 || penaltyScoreB! < 0) return null;
+    const winnerId = penaltyScoreA! > penaltyScoreB! ? match.playerAId : match.playerBId;
+    return {
+      winnerId,
+      scoreA: winnerId === match.playerAId ? 1 : 0,
+      scoreB: winnerId === match.playerBId ? 1 : 0,
+      penaltyScoreA,
+      penaltyScoreB,
+      gameResults: [{ scoreA, scoreB, penaltyScoreA, penaltyScoreB, winnerId }],
+    };
+  }
+
   return { winnerId: scoreA > scoreB ? match.playerAId : match.playerBId, scoreA, scoreB };
+}
+
+export function validateGoalGame(match: Match, scoreA: number, scoreB: number, penaltyScoreA: number | null, penaltyScoreB: number | null): MatchGameResult | null {
+  if (!match.playerAId || !match.playerBId || !Number.isInteger(scoreA) || !Number.isInteger(scoreB) || scoreA < 0 || scoreB < 0) return null;
+  if (scoreA !== scoreB) {
+    return { scoreA, scoreB, winnerId: scoreA > scoreB ? match.playerAId : match.playerBId };
+  }
+  if (!Number.isInteger(penaltyScoreA) || !Number.isInteger(penaltyScoreB) || penaltyScoreA === penaltyScoreB || penaltyScoreA! < 0 || penaltyScoreB! < 0) return null;
+  const winnerId = penaltyScoreA! > penaltyScoreB! ? match.playerAId : match.playerBId;
+  return { scoreA, scoreB, penaltyScoreA, penaltyScoreB, winnerId };
+}
+
+export function applyGoalGameResult(stage: Stage, roundNumber: number, matchId: string, gameResult: MatchGameResult): Stage {
+  const match = stage.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+  if (!match || match.status === 'bye' || match.status === 'completed') return stage;
+  const gameResults = [...(match.gameResults ?? []), gameResult];
+  const winsA = gameResults.filter((item) => item.winnerId === match.playerAId).length;
+  const winsB = gameResults.filter((item) => item.winnerId === match.playerBId).length;
+  const target = targetWins(stage.bestOf);
+  if (winsA >= target || winsB >= target) {
+    const completed = applyMatchResult(stage, roundNumber, matchId, {
+      winnerId: winsA > winsB ? match.playerAId! : match.playerBId!,
+      scoreA: winsA,
+      scoreB: winsB,
+      penaltyScoreA: gameResults.at(-1)?.penaltyScoreA ?? null,
+      penaltyScoreB: gameResults.at(-1)?.penaltyScoreB ?? null,
+      gameResults,
+    });
+    return completed;
+  }
+  const progressed = applyMatchProgress(stage, roundNumber, matchId, winsA, winsB);
+  const updatedMatch = progressed.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+  if (updatedMatch) updatedMatch.gameResults = gameResults;
+  return progressed;
+}
+
+export function replaceGoalGameResult(stage: Stage, roundNumber: number, matchId: string, gameIndex: number, gameResult: MatchGameResult): Stage {
+  const rounds = stage.rounds.map((round) => ({ ...round, matches: round.matches.map((match) => ({ ...match, gameResults: match.gameResults?.slice() })) }));
+  const round = rounds.find((item) => item.number === roundNumber);
+  const match = round?.matches.find((item) => item.id === matchId);
+  if (!round || !match || match.status !== 'completed' || !match.gameResults || gameIndex < 0 || gameIndex >= match.gameResults.length) return stage;
+  const gameResults = match.gameResults.slice();
+  gameResults[gameIndex] = gameResult;
+  const winsA = gameResults.filter((item) => item.winnerId === match.playerAId).length;
+  const winsB = gameResults.filter((item) => item.winnerId === match.playerBId).length;
+  const target = targetWins(stage.bestOf);
+  if (winsA >= target || winsB >= target) {
+    return applyMatchResult(stage, roundNumber, matchId, {
+      winnerId: winsA > winsB ? match.playerAId! : match.playerBId!,
+      scoreA: winsA,
+      scoreB: winsB,
+      penaltyScoreA: gameResults.at(-1)?.penaltyScoreA ?? null,
+      penaltyScoreB: gameResults.at(-1)?.penaltyScoreB ?? null,
+      gameResults,
+    });
+  }
+
+  Object.assign(match, {
+    scoreA: winsA,
+    scoreB: winsB,
+    penaltyScoreA: gameResults.at(-1)?.penaltyScoreA ?? null,
+    penaltyScoreB: gameResults.at(-1)?.penaltyScoreB ?? null,
+    gameResults,
+    winnerId: null,
+    status: 'in-progress' as const,
+  });
+  for (const laterRound of rounds.filter((item) => item.number > roundNumber)) {
+    for (const laterMatch of laterRound.matches) {
+      Object.assign(laterMatch, { playerAId: null, playerBId: null, scoreA: 0, scoreB: 0, penaltyScoreA: null, penaltyScoreB: null, gameResults: [], winnerId: null, status: 'pending' as const });
+    }
+  }
+  const updated = { ...stage, rounds, status: 'in-progress' as const };
+  for (const currentMatch of round.matches) {
+    if (currentMatch.status === 'completed' && currentMatch.winnerId) {
+      propagateWinner(updated, roundNumber, round.matches.indexOf(currentMatch), currentMatch.winnerId);
+    }
+  }
+  return updated;
 }
 
 export function createStage(
@@ -44,17 +149,21 @@ export function createStage(
   bestOf: BestOf,
   totalRounds: number,
   name = format === 'swiss' ? 'Sistema suíço' : 'Eliminação simples',
-  options: { seedOrder?: string[]; sourceStageId?: string; seedMode?: SeedMode } = {},
+  options: { seedOrder?: string[]; sourceStageId?: string; seedMode?: SeedMode; scoreMode?: ScoreMode; pairingMode?: PairingMode; initialPairings?: MatchPairing[] } = {},
 ): Stage {
   const orderedPlayers = options.seedOrder
     ? options.seedOrder.map((id) => players.find((player) => player.id === id)).filter((player): player is Player => !!player)
     : players.slice();
-  const participants = format === 'single-elimination' && options.seedOrder ? orderedPlayers : shuffle(orderedPlayers);
+  const participants = options.pairingMode === 'manual' || format === 'single-elimination' && options.seedOrder
+    ? orderedPlayers
+    : shuffle(orderedPlayers);
   const stage: Stage = {
     id: createId(),
     name,
     format,
     bestOf,
+    scoreMode: options.scoreMode ?? 'series-wins',
+    pairingMode: options.pairingMode ?? 'automatic',
     status: 'in-progress',
     rounds: [],
     totalRounds: format === 'swiss' ? Math.max(1, totalRounds) : bracketRoundCount(participants.length),
@@ -64,9 +173,11 @@ export function createStage(
   };
 
   if (format === 'swiss') {
-    stage.rounds = [createSwissRound(participants, 1, new Map(), new Set())];
+    stage.rounds = [options.initialPairings
+      ? roundFromPairings(1, options.initialPairings, options.pairingMode ?? 'manual')
+      : createSwissRound(participants, 1, new Map(), new Map())];
   } else {
-    stage.rounds = createEliminationRounds(participants, !!options.seedOrder);
+    stage.rounds = createEliminationRounds(participants, !!options.seedOrder, options.initialPairings);
     resolveByes(stage);
   }
 
@@ -83,13 +194,13 @@ export function createNextSwissRound(stage: Stage, players: Player[]): Round | n
   const roundNumber = stage.rounds.length + 1;
   const scores = new Map(players.map((player) => [player.id, 0]));
   const opponents = new Map<string, Set<string>>();
-  const byePlayers = new Set<string>();
+  const byeCounts = new Map(players.map((player) => [player.id, 0]));
 
   for (const round of stage.rounds) {
     for (const match of round.matches) {
       if (match.status === 'bye' && match.winnerId) {
         scores.set(match.winnerId, (scores.get(match.winnerId) ?? 0) + 1);
-        byePlayers.add(match.winnerId);
+        byeCounts.set(match.winnerId, (byeCounts.get(match.winnerId) ?? 0) + 1);
       } else if (match.status === 'completed' && match.winnerId) {
         scores.set(match.winnerId, (scores.get(match.winnerId) ?? 0) + 1);
         if (match.playerAId && match.playerBId) {
@@ -103,7 +214,76 @@ export function createNextSwissRound(stage: Stage, players: Player[]): Round | n
     const scoreDifference = (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0);
     return scoreDifference || a.displayName.localeCompare(b.displayName);
   });
-  return pairSwiss(unpaired, roundNumber, opponents, byePlayers);
+  return pairSwiss(unpaired, roundNumber, opponents, byeCounts);
+}
+
+export function validateEliminationPairings(participantIds: string[], pairings: MatchPairing[]): string | null {
+  if (participantIds.length < 2) return 'Cadastre pelo menos dois participantes.';
+  const bracketSize = 2 ** bracketRoundCount(participantIds.length);
+  if (pairings.length !== bracketSize / 2) return 'A quantidade de confrontos não corresponde ao tamanho da chave.';
+  const selectedIds: string[] = [];
+  for (const pair of pairings) {
+    if (!pair.playerAId && !pair.playerBId) return 'Cada slot da chave deve conter um participante ou um bye.';
+    if (pair.playerAId && pair.playerAId === pair.playerBId) return 'Um participante não pode jogar contra si mesmo.';
+    if (pair.playerAId) selectedIds.push(pair.playerAId);
+    if (pair.playerBId) selectedIds.push(pair.playerBId);
+  }
+  if (selectedIds.length !== participantIds.length || new Set(selectedIds).size !== selectedIds.length ||
+      participantIds.some((id) => !selectedIds.includes(id)) || selectedIds.some((id) => !participantIds.includes(id))) {
+    return 'Cada participante deve aparecer exatamente uma vez na chave.';
+  }
+  const byes = pairings.filter((pair) => !pair.playerAId || !pair.playerBId).length;
+  if (byes !== bracketSize - participantIds.length) return `A chave exige exatamente ${bracketSize - participantIds.length} bye(s).`;
+  return null;
+}
+
+export function generateAutomaticEliminationPairings(participantIds: string[]): MatchPairing[] {
+  if (participantIds.length < 2) return [];
+  const shuffledIds = shuffle(participantIds);
+  const bracketSize = bracketSizeForParticipants(shuffledIds.length);
+  const slots = arrangeBySeed(shuffledIds.map((id) => ({ id } as Player)), bracketSize);
+  return Array.from({ length: bracketSize / 2 }, (_, index) => ({
+    playerAId: slots[index * 2]?.id ?? null,
+    playerBId: slots[index * 2 + 1]?.id ?? null,
+  }));
+}
+
+export function validateSwissPairings(stage: Stage, players: Player[], pairings: MatchPairing[]): string | null {
+  const eligibleIds = stage.participantIds ?? players.map((player) => player.id);
+  if (pairings.length !== Math.ceil(eligibleIds.length / 2)) return 'A quantidade de confrontos não corresponde aos participantes ativos.';
+  const selectedIds: string[] = [];
+  const byeIds: string[] = [];
+  for (const pair of pairings) {
+    if (!pair.playerAId && !pair.playerBId) return 'Cada par precisa incluir pelo menos um participante.';
+    if (pair.playerAId && pair.playerAId === pair.playerBId) return 'Um participante não pode jogar contra si mesmo.';
+    if (pair.playerAId) selectedIds.push(pair.playerAId);
+    if (pair.playerBId) selectedIds.push(pair.playerBId);
+    if (!pair.playerAId || !pair.playerBId) byeIds.push(pair.playerAId ?? pair.playerBId!);
+  }
+  if (selectedIds.length !== eligibleIds.length || new Set(selectedIds).size !== selectedIds.length ||
+      eligibleIds.some((id) => !selectedIds.includes(id)) || selectedIds.some((id) => !eligibleIds.includes(id))) {
+    return 'Cada participante ativo deve aparecer exatamente uma vez nesta rodada.';
+  }
+  if (byeIds.length !== eligibleIds.length % 2) return `Esta rodada exige ${eligibleIds.length % 2} bye(s).`;
+
+  const byeCounts = new Map(eligibleIds.map((id) => [id, 0]));
+  for (const round of stage.rounds) {
+    for (const match of round.matches) {
+      if (match.status === 'bye' && match.winnerId) byeCounts.set(match.winnerId, (byeCounts.get(match.winnerId) ?? 0) + 1);
+    }
+  }
+  if (byeIds.length) {
+    const leastByes = Math.min(...eligibleIds.map((id) => byeCounts.get(id) ?? 0));
+    if (byeIds.some((id) => (byeCounts.get(id) ?? 0) !== leastByes)) {
+      return 'O bye deve ser atribuído a um participante com a menor quantidade de byes anteriores.';
+    }
+  }
+  return null;
+}
+
+export function createManualSwissRound(stage: Stage, players: Player[], pairings: MatchPairing[]): Round | null {
+  if (stage.format !== 'swiss' || validateSwissPairings(stage, players, pairings)) return null;
+  return roundFromPairings(stage.rounds.length + 1, pairings, 'manual');
 }
 
 export function calculateStandings(stage: Stage, players: Player[]): Array<{ player: Player; points: number; played: number }> {
@@ -136,14 +316,21 @@ export function calculateTournamentRecords(tournament: Tournament): PlayerTourna
   for (const stage of tournament.stages) {
     for (const round of stage.rounds) {
       for (const match of round.matches) {
+        if (stage.format === 'swiss' && match.status === 'bye' && match.winnerId) {
+          const winner = records.get(match.winnerId);
+          if (winner) winner.wins += 1;
+          continue;
+        }
         if (match.status !== 'completed' || !match.playerAId || !match.playerBId || !match.winnerId) continue;
         const playerA = records.get(match.playerAId);
         const playerB = records.get(match.playerBId);
         if (!playerA || !playerB) continue;
-        playerA.seriesWins += match.scoreA;
-        playerA.seriesLosses += match.scoreB;
-        playerB.seriesWins += match.scoreB;
-        playerB.seriesLosses += match.scoreA;
+        if ((stage.scoreMode ?? 'series-wins') === 'series-wins') {
+          playerA.seriesWins += match.scoreA;
+          playerA.seriesLosses += match.scoreB;
+          playerB.seriesWins += match.scoreB;
+          playerB.seriesLosses += match.scoreA;
+        }
         const winner = records.get(match.winnerId);
         const loser = records.get(match.winnerId === match.playerAId ? match.playerBId : match.playerAId);
         if (winner && loser) {
@@ -156,20 +343,18 @@ export function calculateTournamentRecords(tournament: Tournament): PlayerTourna
   return [...records.values()].sort((a, b) => b.wins - a.wins || a.losses - b.losses || a.player.displayName.localeCompare(b.player.displayName));
 }
 
-export function validateMatchProgress(match: Match, bestOf: BestOf, scoreA: number, scoreB: number): boolean {
-  const target = bestOf === 3 ? 2 : 3;
-  return match.playerAId !== null && match.playerBId !== null &&
-    Number.isInteger(scoreA) && Number.isInteger(scoreB) && scoreA >= 0 && scoreB >= 0 &&
-    scoreA + scoreB > 0 &&
-    scoreA <= target && scoreB <= target && !(scoreA === target && scoreB === target) &&
-    Math.max(scoreA, scoreB) < target;
+export function validateMatchProgress(match: Match, bestOf: BestOf, scoreA: number, scoreB: number, scoreMode: ScoreMode = 'series-wins'): boolean {
+  if (match.playerAId === null || match.playerBId === null || !Number.isInteger(scoreA) || !Number.isInteger(scoreB) || scoreA < 0 || scoreB < 0) return false;
+  if (scoreMode === 'goals') return bestOf === 1;
+  const target = targetWins(bestOf);
+  return scoreA <= target && scoreB <= target && !(scoreA === target && scoreB === target) && Math.max(scoreA, scoreB) < target;
 }
 
 export function applyMatchProgress(stage: Stage, roundNumber: number, matchId: string, scoreA: number, scoreB: number): Stage {
   const rounds = stage.rounds.map((round) => ({ ...round, matches: round.matches.map((match) => ({ ...match })) }));
   const match = rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
   if (!match || match.status === 'bye') return stage;
-  Object.assign(match, { scoreA, scoreB, winnerId: null, status: 'in-progress' as const });
+  Object.assign(match, { scoreA, scoreB, penaltyScoreA: null, penaltyScoreB: null, winnerId: null, status: 'in-progress' as const });
   return { ...stage, rounds, status: 'in-progress' };
 }
 
@@ -183,6 +368,9 @@ export function applyMatchResult(stage: Stage, roundNumber: number, matchId: str
   Object.assign(match, {
     scoreA: result.scoreA,
     scoreB: result.scoreB,
+    penaltyScoreA: result.penaltyScoreA ?? null,
+    penaltyScoreB: result.penaltyScoreB ?? null,
+    gameResults: result.gameResults ?? match.gameResults ?? [],
     winnerId: result.winnerId,
     status: 'completed' as const,
   });
@@ -196,6 +384,9 @@ export function applyMatchResult(stage: Stage, roundNumber: number, matchId: str
           playerBId: null,
           scoreA: 0,
           scoreB: 0,
+          penaltyScoreA: null,
+          penaltyScoreB: null,
+          gameResults: [],
           winnerId: null,
           status: 'pending' as const,
         });
@@ -219,22 +410,23 @@ function createSwissRound(
   players: Player[],
   roundNumber: number,
   opponents: Map<string, Set<string>>,
-  byePlayers: Set<string>,
+  byeCounts: Map<string, number>,
 ): Round {
-  return pairSwiss(shuffle(players), roundNumber, opponents, byePlayers);
+  return pairSwiss(shuffle(players), roundNumber, opponents, byeCounts);
 }
 
 function pairSwiss(
   orderedPlayers: Player[],
   roundNumber: number,
   opponents: Map<string, Set<string>>,
-  byePlayers: Set<string>,
+  byeCounts: Map<string, number>,
 ): Round {
   const remaining = orderedPlayers.slice();
   const matches: Match[] = [];
   if (remaining.length % 2 === 1) {
+    const minByeCount = Math.min(...remaining.map((player) => byeCounts.get(player.id) ?? 0));
     let byeIndex = remaining.length - 1;
-    while (byeIndex > 0 && byePlayers.has(remaining[byeIndex].id)) byeIndex -= 1;
+    while (byeIndex > 0 && (byeCounts.get(remaining[byeIndex].id) ?? 0) > minByeCount) byeIndex -= 1;
     const [byePlayer] = remaining.splice(byeIndex, 1);
     matches.push(makeMatch(byePlayer.id, null, byePlayer.id, 'bye'));
   }
@@ -246,20 +438,24 @@ function pairSwiss(
     const [playerB] = remaining.splice(opponentIndex, 1);
     matches.push(makeMatch(playerA.id, playerB.id));
   }
-  return { id: createId(), number: roundNumber, matches };
+  return { id: createId(), number: roundNumber, pairingMode: 'automatic', matches };
 }
 
-function createEliminationRounds(players: Player[], useSeeds: boolean): Round[] {
+function createEliminationRounds(players: Player[], useSeeds: boolean, initialPairings?: MatchPairing[]): Round[] {
   if (players.length < 2) return [];
   const size = 2 ** bracketRoundCount(players.length);
   const rounds: Round[] = [];
-  const slots = useSeeds ? arrangeBySeed(players, size) : shuffle(players);
+  const automaticPairings = useSeeds
+    ? Array.from({ length: size / 2 }, (_, index) => {
+        const slots = arrangeBySeed(players, size);
+        return { playerAId: slots[index * 2]?.id ?? null, playerBId: slots[index * 2 + 1]?.id ?? null };
+      })
+    : generateAutomaticEliminationPairings(players.map((player) => player.id));
   const firstRound: Round = {
     id: createId(),
     number: 1,
-    matches: Array.from({ length: size / 2 }, (_, index) =>
-      makeMatch(slots[index * 2]?.id ?? null, slots[index * 2 + 1]?.id ?? null),
-    ),
+    pairingMode: initialPairings ? 'manual' : useSeeds ? 'automatic' : 'automatic',
+    matches: (initialPairings ?? automaticPairings).map((pair) => makeMatch(pair.playerAId, pair.playerBId)),
   };
   rounds.push(firstRound);
   for (let number = 2; number <= bracketRoundCount(players.length); number += 1) {
@@ -270,6 +466,17 @@ function createEliminationRounds(players: Player[], useSeeds: boolean): Round[] 
     });
   }
   return rounds;
+}
+
+function roundFromPairings(roundNumber: number, pairings: MatchPairing[], pairingMode: PairingMode): Round {
+  return {
+    id: createId(),
+    number: roundNumber,
+    pairingMode,
+    matches: pairings.map((pair) => pair.playerAId && pair.playerBId
+      ? makeMatch(pair.playerAId, pair.playerBId)
+      : makeMatch(pair.playerAId, pair.playerBId, pair.playerAId ?? pair.playerBId, 'bye')),
+  };
 }
 
 function resolveByes(stage: Stage): void {
@@ -327,6 +534,10 @@ function makeMatch(
 
 function bracketRoundCount(playerCount: number): number {
   return playerCount > 1 ? Math.ceil(Math.log2(playerCount)) : 0;
+}
+
+export function bracketSizeForParticipants(playerCount: number): number {
+  return playerCount > 1 ? 2 ** bracketRoundCount(playerCount) : 0;
 }
 
 function addOpponent(opponents: Map<string, Set<string>>, playerId: string, opponentId: string): void {

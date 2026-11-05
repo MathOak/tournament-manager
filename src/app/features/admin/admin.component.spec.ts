@@ -26,9 +26,12 @@ describe('AdminComponent', () => {
     tournament = signal(adminTournament());
     storeMock = {
       tournament: tournament.asReadonly(),
+      tournaments: signal([tournament()]),
+      selectedTournamentId: signal(tournament().id),
       notice: signal(''),
       updateMatch: vi.fn(() => true),
       updateMatchProgress: vi.fn(() => true),
+      startMatch: vi.fn(() => true),
     } as unknown as TournamentStore;
     await TestBed.configureTestingModule({
       imports: [AdminComponent],
@@ -55,13 +58,22 @@ describe('AdminComponent', () => {
     component.draft(match).scoreA = 2;
     component.draft(match).scoreB = 1;
     component.saveResult(stage, 1, match);
-    expect(storeMock.updateMatch).toHaveBeenCalledWith(stage.id, 1, match.id, 2, 1);
+    expect(storeMock.updateMatch).toHaveBeenCalledWith(stage.id, 1, match.id, 2, 1, null, null);
     expect(component.drafts[match.id]).toBeUndefined();
 
     component.draft(match).scoreA = 1;
     component.draft(match).scoreB = 0;
     component.saveProgress(stage, 1, match);
     expect(storeMock.updateMatchProgress).toHaveBeenCalledWith(stage.id, 1, match.id, 1, 0);
+  });
+
+  it('starts the selected match without changing its 0-0 draft', () => {
+    const fixture = TestBed.createComponent(AdminComponent);
+    const component = fixture.componentInstance;
+    const stage = tournament().stages[0];
+    const match = stage.rounds[0].matches[0];
+    component.startMatch(stage, 1, match);
+    expect(storeMock.startMatch).toHaveBeenCalledWith(stage.id, 1, match.id);
   });
 
   it('requires confirmation before editing a completed result', () => {
@@ -74,7 +86,7 @@ describe('AdminComponent', () => {
     confirmSpy.mockReturnValue(true);
     component.beginCorrection({ ...match, scoreA: 2, scoreB: 1, winnerId: 'p1', status: 'completed' });
     expect(component.isCorrection(match)).toBe(true);
-    expect(component.draft(match)).toEqual({ scoreA: 2, scoreB: 1 });
+    expect(component.draft(match)).toMatchObject({ scoreA: 2, scoreB: 1, penaltyScoreA: null, penaltyScoreB: null });
     confirmSpy.mockRestore();
   });
 
@@ -82,7 +94,8 @@ describe('AdminComponent', () => {
     tournament.set(createEmptyTournament());
     const fixture = TestBed.createComponent(AdminComponent);
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Nenhuma etapa pronta');
-    expect((fixture.nativeElement as HTMLElement).querySelector('.admin-toolbar')).toBeNull();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('Nenhuma etapa pronta');
+    expect(element.querySelector('.admin-round-view')).toBeNull();
   });
 });

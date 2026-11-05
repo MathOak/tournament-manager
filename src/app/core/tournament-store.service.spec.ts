@@ -45,9 +45,9 @@ describe('TournamentStore', () => {
   });
 
   it('trims tournament details and rejects blank names or game labels', () => {
-    store.updateTournamentDetails('  Cup  ', '  Chess  ');
-    expect(store.tournament()).toMatchObject({ name: 'Cup', game: 'Chess' });
-    store.updateTournamentDetails(' ', 'Chess');
+    store.updateTournamentDetails('  Cup  ', '  Clash Royale  ');
+    expect(store.tournament()).toMatchObject({ name: 'Cup', game: 'Clash Royale', gameId: 'clash-royale' });
+    store.updateTournamentDetails(' ', 'clash-royale');
     expect(store.notice()).toContain('Informe');
     expect(store.tournament().name).toBe('Cup');
   });
@@ -92,6 +92,55 @@ describe('TournamentStore', () => {
     expect(store.tournament().stages[1].format).toBe('single-elimination');
   });
 
+  it('creates a manual elimination bracket with the exact pairs and persists its pairing mode', () => {
+    ['Ana', 'Bia', 'Caio', 'Duda', 'Eva'].forEach((name) => store.addPlayer(name));
+    const participants = store.tournament().players;
+    const pairs = [
+      { playerAId: participants[0].id, playerBId: null },
+      { playerAId: participants[1].id, playerBId: participants[2].id },
+      { playerAId: participants[3].id, playerBId: null },
+      { playerAId: participants[4].id, playerBId: null },
+    ];
+    expect(store.addStage('single-elimination', 3, 1, 'manual', pairs)).toBe(true);
+    const stage = store.tournament().stages[0];
+    expect(stage.pairingMode).toBe('manual');
+    expect(stage.rounds[0].matches.map(({ playerAId, playerBId }) => ({ playerAId, playerBId }))).toEqual(pairs);
+    expect(stage.rounds[1].matches.every((match) => match.status !== 'bye' && (match.playerAId || match.playerBId))).toBe(true);
+  });
+
+  it('creates and starts a manual Swiss round after the prior round completes', () => {
+    ['Ana', 'Bia', 'Caio', 'Duda'].forEach((name) => store.addPlayer(name));
+    expect(store.addStage('swiss', 3, 2, 'manual', [
+      { playerAId: 'player-1', playerBId: 'player-2' },
+      { playerAId: 'player-3', playerBId: 'player-4' },
+    ])).toBe(false);
+
+    // Use the generated IDs from the current participant list for a valid manual first round.
+    const playerIds = store.tournament().players.map((player) => player.id);
+    expect(store.addStage('swiss', 3, 2, 'manual', [
+      { playerAId: playerIds[0], playerBId: playerIds[1] },
+      { playerAId: playerIds[2], playerBId: playerIds[3] },
+    ])).toBe(true);
+    const stage = store.tournament().stages[0];
+    expect(stage.rounds[0].pairingMode).toBe('manual');
+    expect(store.startNextSwissRound(stage.id)).toBe(false);
+    expect(store.startManualSwissRound(stage.id, [
+      { playerAId: playerIds[0], playerBId: playerIds[2] },
+      { playerAId: playerIds[1], playerBId: playerIds[3] },
+    ])).toBe(false);
+    for (const match of stage.rounds[0].matches) {
+      match.status = 'completed';
+      match.winnerId = match.playerAId;
+      match.scoreA = 2;
+    }
+    expect(store.startManualSwissRound(stage.id, [
+      { playerAId: playerIds[0], playerBId: playerIds[2] },
+      { playerAId: playerIds[1], playerBId: playerIds[3] },
+    ])).toBe(true);
+    expect(store.tournament().stages[0].rounds[1].pairingMode).toBe('manual');
+    expect(store.tournament().stages[0].rounds[1].matches[0]).toMatchObject({ playerAId: playerIds[0], playerBId: playerIds[2] });
+  });
+
   it('validates final and partial match scores before committing state', () => {
     store.addPlayer('Ana');
     store.addPlayer('Bia');
@@ -104,6 +153,74 @@ describe('TournamentStore', () => {
     expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ scoreA: 1, status: 'in-progress', winnerId: null });
     expect(store.updateMatch(stage.id, 1, match.id, 2, 0)).toBe(true);
     expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ scoreA: 2, scoreB: 0, status: 'completed' });
+  });
+
+  it('starts a match live at 0-0 and does not count it as a result', () => {
+    store.addPlayer('Ana');
+    store.addPlayer('Bia');
+    store.addStage('single-elimination', 3, 1);
+    const stage = store.tournament().stages[0];
+    const match = stage.rounds[0].matches[0];
+    expect(store.startMatch(stage.id, 1, match.id)).toBe(true);
+    expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ status: 'in-progress', scoreA: 0, scoreB: 0, winnerId: null });
+  });
+
+  it('records football goals and requires unequal penalties to finish a tied match', () => {
+    store.updateTournamentDetails('Cup', 'ea-sports-fc');
+    store.addPlayer('Ana');
+    store.addPlayer('Bia');
+    expect(store.addStage('single-elimination', 1, 1)).toBe(true);
+    const stage = store.tournament().stages[0];
+    const match = stage.rounds[0].matches[0];
+    expect(stage.scoreMode).toBe('goals');
+    expect(store.startMatch(stage.id, 1, match.id)).toBe(true);
+    expect(store.updateMatch(stage.id, 1, match.id, 1, 1)).toBe(false);
+    expect(store.updateMatch(stage.id, 1, match.id, 1, 1, 4, 3)).toBe(true);
+    expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ status: 'completed', winnerId: match.playerAId, scoreA: 1, scoreB: 0, penaltyScoreA: 4, penaltyScoreB: 3 });
+  });
+
+  it('submits a football score with a regulation-time winner without requiring a penalty winner', () => {
+    store.updateTournamentDetails('Cup', 'ea-sports-fc');
+    store.addPlayer('Ana');
+    store.addPlayer('Bia');
+    store.addStage('single-elimination', 1, 1);
+    const stage = store.tournament().stages[0];
+    const match = stage.rounds[0].matches[0];
+    expect(store.startMatch(stage.id, 1, match.id)).toBe(true);
+    expect(store.recordGoalGame(stage.id, 1, match.id, 2, 1, 0, 0)).toBe(true);
+    const savedMatch = store.tournament().stages[0].rounds[0].matches[0];
+    expect(savedMatch).toMatchObject({ status: 'completed', winnerId: match.playerAId });
+    expect(savedMatch.gameResults?.[0]).toEqual({ scoreA: 2, scoreB: 1, winnerId: match.playerAId });
+  });
+
+  it('supports EA SPORTS FC MD2 series by recording goals and penalties game by game', () => {
+    store.updateTournamentDetails('Cup', 'ea-sports-fc');
+    store.addPlayer('Ana');
+    store.addPlayer('Bia');
+    expect(store.addStage('single-elimination', 2, 1)).toBe(true);
+    const stage = store.tournament().stages[0];
+    const match = stage.rounds[0].matches[0];
+    expect(store.startMatch(stage.id, 1, match.id)).toBe(true);
+    expect(store.recordGoalGame(stage.id, 1, match.id, 2, 1)).toBe(true);
+    expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ status: 'in-progress', scoreA: 1, scoreB: 0 });
+    expect(store.recordGoalGame(stage.id, 1, match.id, 1, 1, 5, 4)).toBe(true);
+    expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ status: 'completed', winnerId: match.playerAId, scoreA: 2, scoreB: 0 });
+  });
+
+  it('migrates schema v1 tournaments to v2 without changing existing series scores', () => {
+    const legacy = createEmptyTournament();
+    legacy.schemaVersion = 1;
+    legacy.game = 'FIFA';
+    legacy.gameId = undefined;
+    legacy.players = [{ id: 'p1', displayName: 'Ana' }, { id: 'p2', displayName: 'Bia' }];
+    legacy.stages = [{
+      id: 'legacy-stage', name: 'Final', format: 'single-elimination', bestOf: 3, status: 'in-progress', totalRounds: 1,
+      rounds: [{ id: 'r', number: 1, matches: [{ id: 'm', playerAId: 'p1', playerBId: 'p2', scoreA: 2, scoreB: 1, winnerId: 'p1', status: 'completed' }] }],
+    }];
+    expect(store.importJson(JSON.stringify(legacy))).toBe(true);
+    expect(store.tournament()).toMatchObject({ schemaVersion: 2, game: 'FIFA', gameId: 'ea-sports-fc' });
+    expect(store.tournament().stages[0]).toMatchObject({ bestOf: 3, scoreMode: 'series-wins' });
+    expect(store.tournament().stages[0].rounds[0].matches[0]).toMatchObject({ scoreA: 2, scoreB: 1, winnerId: 'p1' });
   });
 
   it('generates the next Swiss round only after current matches are complete', () => {

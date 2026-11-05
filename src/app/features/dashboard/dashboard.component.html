@@ -8,13 +8,13 @@
     @if (liveMatches().length) {
       <div class="featured-matches">
         @for (entry of liveMatches(); track entry.match.id) {
-          <app-live-match-card [stageName]="entry.stage.name" [roundName]="roundLabel(entry.round)" [bestOf]="entry.stage.bestOf" [playerA]="playerName(entry.match.playerAId)" [playerB]="playerName(entry.match.playerBId)" [recordA]="(record(entry.match.playerAId)?.wins ?? 0) + 'V – ' + (record(entry.match.playerAId)?.losses ?? 0) + 'D'" [recordB]="(record(entry.match.playerBId)?.wins ?? 0) + 'V – ' + (record(entry.match.playerBId)?.losses ?? 0) + 'D'" [scoreA]="entry.match.scoreA" [scoreB]="entry.match.scoreB" />
+          <app-live-match-card [stageName]="entry.stage.name" [roundName]="roundLabel(entry.round)" [bestOf]="entry.stage.bestOf" [scoreMode]="entry.stage.scoreMode ?? 'series-wins'" [playerA]="playerName(entry.match.playerAId)" [playerB]="playerName(entry.match.playerBId)" [recordA]="(record(entry.match.playerAId)?.wins ?? 0) + 'V – ' + (record(entry.match.playerAId)?.losses ?? 0) + 'D'" [recordB]="(record(entry.match.playerBId)?.wins ?? 0) + 'V – ' + (record(entry.match.playerBId)?.losses ?? 0) + 'D'" [scoreA]="entry.match.scoreA" [scoreB]="entry.match.scoreB" [penaltyScoreA]="entry.match.penaltyScoreA ?? null" [penaltyScoreB]="entry.match.penaltyScoreB ?? null" [gameResults]="entry.match.gameResults ?? []" />
         }
       </div>
     } @else if (nextMatches().length) {
       <div class="featured-matches upcoming-grid">
         @for (entry of nextMatches(); track entry.match.id) {
-          <app-upcoming-match-card [stageName]="entry.stage.name" [roundName]="roundLabel(entry.round)" [bestOf]="entry.stage.bestOf" [playerA]="playerName(entry.match.playerAId)" [playerB]="playerName(entry.match.playerBId)" [recordA]="(record(entry.match.playerAId)?.wins ?? 0) + 'V–' + (record(entry.match.playerAId)?.losses ?? 0) + 'D'" [recordB]="(record(entry.match.playerBId)?.wins ?? 0) + 'V–' + (record(entry.match.playerBId)?.losses ?? 0) + 'D'" />
+          <app-upcoming-match-card [stageName]="entry.stage.name" [roundName]="roundLabel(entry.round)" [bestOf]="entry.stage.bestOf" [scoreMode]="entry.stage.scoreMode ?? 'series-wins'" [playerA]="playerName(entry.match.playerAId)" [playerB]="playerName(entry.match.playerBId)" [recordA]="(record(entry.match.playerAId)?.wins ?? 0) + 'V–' + (record(entry.match.playerAId)?.losses ?? 0) + 'D'" [recordB]="(record(entry.match.playerBId)?.wins ?? 0) + 'V–' + (record(entry.match.playerBId)?.losses ?? 0) + 'D'" />
         }
       </div>
     } @else {

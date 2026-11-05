@@ -1,7 +1,7 @@
 <article class="panel stage-card">
   <div class="stage-title-row"><div><span class="format-tag">{{ stage.format === 'swiss' ? 'SISTEMA SUÍÇO' : 'ELIMINAÇÃO SIMPLES' }}</span><h3>{{ stage.name }}</h3></div><app-status-badge [label]="stage.status === 'completed' ? 'Concluída' : 'Em andamento'" [variant]="stage.status === 'completed' ? 'success' : 'info'" /></div>
   @if (stage.sourceStageId) { <p class="stage-origin">Classificados do suíço <span>·</span> Seeds {{ stage.seedMode === 'standings' ? 'por classificação' : stage.seedMode === 'manual' ? 'manuais' : 'sorteados' }}</p> }
-  <p class="muted small">MD{{ stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} rodada(s)</p>
+  <p class="muted small">{{ stage.scoreMode === 'goals' ? 'Placar em gols' : 'MD' + stage.bestOf }} <span class="dot-separator">•</span> {{ stage.rounds.length }} rodada(s)</p>
   @if (stage.format === 'swiss') {
     <div class="standings-table"><div class="table-row table-head"><span>Jogador · campanha</span><span>J</span><span>Pts</span></div>
       @for (standing of standings(); track standing.player.id; let index = $index) {
@@ -18,6 +18,7 @@
             <div class="bracket-player" [class.bracket-winner]="match.winnerId === match.playerBId && match.status !== 'pending'"><span>{{ playerName(match.playerBId) }}</span><b>{{ match.scoreB }}</b></div>
             @if (match.status === 'in-progress') { <small class="bracket-state">AO VIVO</small> }
             @else if (match.status === 'bye') { <small class="bracket-state">BYE · AVANÇA</small> }
+            @if (match.penaltyScoreA !== null && match.penaltyScoreA !== undefined && match.penaltyScoreB !== null && match.penaltyScoreB !== undefined) { <small class="bracket-state">PÊNALTIS {{ match.penaltyScoreA }}–{{ match.penaltyScoreB }}</small> }
           </div>
         }
       </section>

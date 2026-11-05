@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { Match } from '../../../../domain/tournament.model';
+import { Match, ScoreMode } from '../../../../domain/tournament.model';
 
 @Component({
   selector: 'app-bracket-match-card',
@@ -12,4 +12,11 @@ export class BracketMatchCardComponent {
   @Input({ required: true }) matchIndex!: number;
   @Input({ required: true }) playerALabel!: string;
   @Input({ required: true }) playerBLabel!: string;
+  @Input() scoreMode: ScoreMode = 'series-wins';
+
+  gameResultsSummary(): string {
+    return (this.match.gameResults ?? []).map((game) =>
+      `${game.scoreA}–${game.scoreB}${game.penaltyScoreA !== undefined && game.penaltyScoreB !== undefined ? ` (Pênaltis ${game.penaltyScoreA}–${game.penaltyScoreB})` : ''}`,
+    ).join(' · ');
+  }
 }

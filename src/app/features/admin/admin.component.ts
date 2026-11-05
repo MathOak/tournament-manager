@@ -1,7 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Match, Stage } from '../../domain/tournament.model';
+import { BestOf, Match, Stage } from '../../domain/tournament.model';
+import { targetWins as getTargetWins } from '../../domain/tournament-engine';
 import { TournamentStore } from '../../core/tournament-store.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 import { PageHeadingComponent } from '../../shared/ui/page-heading/page-heading.component';
@@ -15,7 +16,7 @@ import { SelectMenuComponent, SelectMenuOption } from '../../shared/ui/select-me
 })
 export class AdminComponent {
   readonly store = inject(TournamentStore);
-  readonly drafts: Record<string, { scoreA: number; scoreB: number }> = {};
+  readonly drafts: Record<string, { scoreA: number; scoreB: number; gameScoreA: number; gameScoreB: number; gameResultIndex: number | null; penaltyScoreA: number | null; penaltyScoreB: number | null }> = {};
   readonly editingMatches = new Set<string>();
   readonly selectedStageId = signal('');
   readonly selectedRoundNumber = signal(0);
@@ -117,13 +118,26 @@ export class AdminComponent {
     return this.store.tournament().players.find((player) => player.id === playerId)?.displayName ?? 'Aguardando jogador';
   }
 
-  draft(match: Match): { scoreA: number; scoreB: number } {
-    return this.drafts[match.id] ??= { scoreA: match.scoreA, scoreB: match.scoreB };
+  draft(match: Match): { scoreA: number; scoreB: number; gameScoreA: number; gameScoreB: number; gameResultIndex: number | null; penaltyScoreA: number | null; penaltyScoreB: number | null } {
+    return this.drafts[match.id] ??= {
+      scoreA: match.scoreA,
+      scoreB: match.scoreB,
+      gameScoreA: 0,
+      gameScoreB: 0,
+      gameResultIndex: null,
+      penaltyScoreA: match.gameResults?.at(-1)?.penaltyScoreA ?? match.penaltyScoreA ?? null,
+      penaltyScoreB: match.gameResults?.at(-1)?.penaltyScoreB ?? match.penaltyScoreB ?? null,
+    };
   }
 
   saveResult(stage: Stage, roundNumber: number, match: Match): void {
     const result = this.draft(match);
-    if (this.store.updateMatch(stage.id, roundNumber, match.id, Number(result.scoreA), Number(result.scoreB))) {
+    const saved = stage.scoreMode === 'goals'
+      ? result.gameResultIndex !== null
+        ? this.store.correctGoalGame(stage.id, roundNumber, match.id, result.gameResultIndex, Number(result.gameScoreA), Number(result.gameScoreB), result.penaltyScoreA, result.penaltyScoreB)
+        : this.store.recordGoalGame(stage.id, roundNumber, match.id, Number(result.gameScoreA), Number(result.gameScoreB), result.penaltyScoreA, result.penaltyScoreB)
+      : this.store.updateMatch(stage.id, roundNumber, match.id, Number(result.scoreA), Number(result.scoreB), result.penaltyScoreA, result.penaltyScoreB);
+    if (saved) {
       delete this.drafts[match.id];
       this.editingMatches.delete(match.id);
     }
@@ -132,7 +146,52 @@ export class AdminComponent {
   beginCorrection(match: Match): void {
     if (!confirm('Corrigir este resultado pode alterar os jogadores que avançaram na chave. Continuar?')) return;
     this.editingMatches.add(match.id);
-    this.drafts[match.id] = { scoreA: match.scoreA, scoreB: match.scoreB };
+    this.drafts[match.id] = {
+      scoreA: match.scoreA,
+      scoreB: match.scoreB,
+      gameScoreA: match.gameResults?.at(-1)?.scoreA ?? 0,
+      gameScoreB: match.gameResults?.at(-1)?.scoreB ?? 0,
+      gameResultIndex: match.gameResults?.length ? match.gameResults.length - 1 : null,
+      penaltyScoreA: match.gameResults?.at(-1)?.penaltyScoreA ?? match.penaltyScoreA ?? null,
+      penaltyScoreB: match.gameResults?.at(-1)?.penaltyScoreB ?? match.penaltyScoreB ?? null,
+    };
+  }
+
+  startMatch(stage: Stage, roundNumber: number, match: Match): void {
+    if (this.store.startMatch(stage.id, roundNumber, match.id)) delete this.drafts[match.id];
+  }
+
+  scoreLabel(stage: Stage): string {
+    return (stage.scoreMode ?? 'series-wins') === 'goals' ? 'Gols' : 'Vitórias na série';
+  }
+
+  targetWins(bestOf: BestOf): number {
+    return getTargetWins(bestOf);
+  }
+
+  nextGoalGame(match: Match): number {
+    return (match.gameResults?.length ?? 0) + 1;
+  }
+
+  goalGameBeingEdited(match: Match): number {
+    const index = this.draft(match).gameResultIndex;
+    return index === null ? this.nextGoalGame(match) : index + 1;
+  }
+
+  seriesScore(match: Match): string {
+    return `${match.scoreA}–${match.scoreB}`;
+  }
+
+  goalGameSummary(match: Match): string {
+    return (match.gameResults ?? []).map((game) =>
+      `${game.scoreA}–${game.scoreB}${game.penaltyScoreA !== undefined && game.penaltyScoreB !== undefined ? ` (Pênaltis ${game.penaltyScoreA}–${game.penaltyScoreB})` : ''}`,
+    ).join(' · ');
+  }
+
+  completedScoreSummary(stage: Stage, match: Match): string {
+    return stage.scoreMode === 'goals'
+      ? `${this.seriesScore(match)} vitórias · ${this.goalGameSummary(match)}`
+      : this.seriesScore(match);
   }
 
   saveProgress(stage: Stage, roundNumber: number, match: Match): void {

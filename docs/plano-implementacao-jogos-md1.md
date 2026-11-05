@@ -4,7 +4,7 @@
 
 Permitir escolher o jogo de um catálogo antes de configurar o torneio, classificar cada jogo por uma categoria de regras e usar a categoria para determinar como registrar, validar e apresentar os resultados. O primeiro catálogo terá Clash Royale e EA SPORTS FC (FIFA/EAFC). O sistema também deve oferecer MD1 e permitir iniciar uma partida em 0–0 para que ela apareça como ao vivo.
 
-Este documento é um plano de implementação; nenhuma alteração de código foi feita nesta etapa.
+**Status: implementado e ampliado em 2026-11-05.** Todos os jogos oferecem MD1, MD2, MD3 e MD5, configurados no catálogo. EA SPORTS FC guarda gols por jogo dentro da série; MD2 significa primeira pessoa a duas vitórias (podendo durar até três jogos). Validação final: build aprovado e 87 testes unitários aprovados. A suíte Playwright ainda precisa de execução bem-sucedida.
 
 ## 2. Estado atual confirmado
 
@@ -19,7 +19,7 @@ Este documento é um plano de implementação; nenhuma alteração de código fo
 
 - **REQ-001 — Catálogo:** substituir o campo livre de jogo por uma seleção de um catálogo com Clash Royale e EA SPORTS FC (incluindo FIFA/EAFC como nomes anteriores/aliases quando importar dados). O catálogo usa identificadores estáveis, nomes de exibição e uma categoria de pontuação; não inferir regras comparando texto do nome.
 - **REQ-002 — Categorias extensíveis:** disponibilizar uma estratégia de resultado por categoria. Todos os jogos classificados na categoria de gols devem compartilhar a validação, entrada de placar, desempate por pênaltis e apresentação definidos para EA SPORTS FC. A categoria de Clash Royale mantém placar de vitórias em partidas/séries.
-- **REQ-003 — Formato MD1:** incluir MD1, preservando MD3 e MD5 para formatos/categorias compatíveis. Uma etapa MD1 de categoria de gols registra gols de cada lado; um resultado empatado só pode ser concluído quando houver vencedor definido nos pênaltis.
+- **REQ-003 — Formatos MD:** oferecer MD1, MD2, MD3 e MD5 a todos os jogos. Para Clash Royale, registrar vitórias por série; para jogos de gols, registrar o placar de gols de cada jogo na série e encerrar quando alguém atingir o alvo de vitórias correspondente.
 - **REQ-004 — Pênaltis:** na categoria de gols, permitir informar placar de pênaltis quando o placar de gols terminar empatado. Pênaltis não substituem nem alteram o placar de gols; determinam o vencedor da partida. Não permitir concluir empate sem vencedor nem registrar pênaltis se o placar de gols já tiver um vencedor.
 - **REQ-005 — Iniciar ao vivo em 0–0:** o Admin deve ter uma ação explícita “Iniciar partida” que persiste o estado `in-progress` com placar 0–0, sem declarar vencedor. A partida deve aparecer como ao vivo no Admin, Dashboard e bracket. O início não deve alterar classificação nem avançar chave.
 - **REQ-006 — Resultados coerentes nas telas:** Admin, Dashboard, cards de partida, histórico e bracket devem identificar a unidade do placar (vitórias da série ou gols) e mostrar o vencedor/placar de pênaltis quando aplicável.
@@ -33,7 +33,7 @@ Este documento é um plano de implementação; nenhuma alteração de código fo
 3. Usar resultado discriminado no domínio, em vez de tratar gols como vitórias de série: resultado de série com vitórias A/B; resultado de gols com gols A/B e, opcionalmente, pênaltis A/B. Ajustar `Match`, `BestOf` e o validador para suportar isso com tipos estritos.
 4. Manter compatibilidade de exibição de torneios antigos, preservando o nome de jogo original. Para registros v1 conhecidos, atribuir o ID de catálogo correspondente; para jogo desconhecido, preservar como legado e exigir seleção de um jogo suportado antes de criar novas etapas, sem apagar as etapas/resultados existentes.
 5. Publicar novos dados como schema v2 e manter um migrador v1 → v2 centralizado na leitura/importação. Validar o objeto após a migração e cobrir IndexedDB, localStorage e JSON importado. Não alterar nomes de banco, stores ou chaves de persistência.
-6. Na primeira entrega, permitir MD1/MD3/MD5 para a categoria de vitórias de série e MD1 para categoria de gols. Exibir somente os formatos compatíveis com o jogo selecionado. Se também for necessário MD3/MD5 de partidas de futebol, isso exige modelar uma série contendo vários resultados individuais de gols e deve ser tratado como extensão, não como soma ambígua de gols.
+6. Os formatos MD1, MD2, MD3 e MD5 vêm da lista do jogo no catálogo, permitindo alterações futuras. MD2 segue a decisão do organizador: primeira pessoa a duas vitórias. Para jogos de gols, cada jogo da série possui seu próprio placar e eventual desempate por pênaltis.
 7. O botão “Iniciar partida” é uma operação explícita no store. Ele cria o estado ao vivo com resultado zerado; salvar placar parcial em 0–0 também pode preservar esse estado, mas não é substituto para uma ação de início clara.
 
 ## 5. Arquivos e áreas afetadas
@@ -51,43 +51,43 @@ Este documento é um plano de implementação; nenhuma alteração de código fo
 
 ### Fase 1 — Catálogo, tipos e compatibilidade de domínio
 
-- [ ] **T001 [Plan:1.1]:** criar `src/app/domain/game-catalog.ts` com IDs estáveis, nomes, aliases de importação, categorias `series-wins`/`goals` e formatos permitidos para Clash Royale e EA SPORTS FC.
-- [ ] **T002 [Plan:1.2,1.3]:** atualizar `src/app/domain/tournament.model.ts` para incluir `BestOf = 1 | 3 | 5`, identidade do jogo e resultados discriminados, mantendo representação segura de torneios legados.
-- [ ] **T003 [Plan:1.3]:** refatorar `src/app/domain/tournament-engine.ts` para validar resultados por categoria: alvo de vitórias para séries; gols não negativos e pênaltis somente para empate em categoria de gols; derivar vencedor corretamente.
-- [ ] **T004 [Plan:1.3,1.4]:** atualizar cálculo de classificação e retrospecto em `src/app/domain/tournament-engine.ts` para contar partidas concluídas/vitórias sem somar gols como vitórias de série.
-- [ ] **T005 [Plan:1.3,1.4]:** adicionar specs em `src/app/domain/tournament-engine.spec.ts` cobrindo MD1 1–0, 0–0 ao vivo, gols empatados pendentes, desempate por pênaltis, gols sem pênaltis, séries MD1/3/5 e ausência de avanço sem vencedor.
+- [x] **T001 [Plan:1.1]:** criar `src/app/domain/game-catalog.ts` com IDs estáveis, nomes, aliases de importação, categorias `series-wins`/`goals` e formatos permitidos para Clash Royale e EA SPORTS FC.
+- [x] **T002 [Plan:1.2,1.3]:** atualizar `src/app/domain/tournament.model.ts` para incluir `BestOf = 1 | 3 | 5`, identidade do jogo e dados opcionais de pênaltis, mantendo compatibilidade com torneios legados.
+- [x] **T003 [Plan:1.3]:** atualizar `src/app/domain/tournament-engine.ts` para validar resultados por categoria: alvo de vitórias para séries; gols não negativos e pênaltis somente para empate em categoria de gols; derivar vencedor corretamente.
+- [x] **T004 [Plan:1.3,1.4]:** atualizar cálculo de classificação e retrospecto em `src/app/domain/tournament-engine.ts` para contar partidas concluídas/vitórias sem somar gols como vitórias de série.
+- [x] **T005 [Plan:1.3,1.4]:** adicionar specs em `src/app/domain/tournament-engine.spec.ts` cobrindo MD1, 0–0 ao vivo, empate, pênaltis e estatísticas por categoria.
 
 ### Fase 2 — Persistência, migração e início de partida
 
-- [ ] **T006 [Plan:1.5]:** atualizar `src/app/core/tournament-store.service.ts` para escrever schema v2 e migrar documentos v1 no carregamento local e na importação JSON, preservando nomes de jogos/placares conhecidos e desconhecidos.
-- [ ] **T007 [Plan:1.5,1.7]:** ajustar o validador de importação em `src/app/core/tournament-store.service.ts` para aceitar v1 via migração e v2 diretamente, rejeitando dados incompletos sem substituir dados atuais.
-- [ ] **T008 [Plan:1.7]:** adicionar operação de início no store, validando etapa, rodada, partida pendente e participantes; persistir placar inicial 0–0 com status `in-progress` e sem vencedor.
-- [ ] **T009 [Plan:1.3,1.7]:** adequar `updateMatchProgress()` e `updateMatch()` para aceitar o resultado zerado apenas como progresso/início, exigir vencedor ao concluir e manter integridade ao corrigir resultado de eliminatória.
-- [ ] **T010 [Plan:1.5,1.7]:** ampliar `src/app/core/tournament-store.service.spec.ts` com migração de JSON v1, round-trip v2, jogo legado, estado local e import inválido sem perda de dados.
+- [x] **T006 [Plan:1.5]:** atualizar `src/app/core/tournament-store.service.ts` para escrever schema v2 e migrar documentos v1 no carregamento local e na importação JSON.
+- [x] **T007 [Plan:1.5,1.7]:** ajustar o validador de importação em `src/app/core/tournament-store.service.ts` para aceitar v1 via migração e v2 diretamente, rejeitando dados inválidos sem substituir dados atuais.
+- [x] **T008 [Plan:1.7]:** adicionar operação de início no store, validando etapa, rodada, partida pendente e participantes; persistir placar inicial 0–0 com status `in-progress` e sem vencedor.
+- [x] **T009 [Plan:1.3,1.7]:** adequar `updateMatchProgress()` e `updateMatch()` para suportar placar ao vivo 0–0, conclusão validada e pênaltis.
+- [x] **T010 [Plan:1.5,1.7]:** ampliar specs do store para migração v1, resultados existentes, início de partida e import inválido.
 
 ### Fase 3 — Configuração de torneio
 
-- [ ] **T011 [Plan:1.1,1.2]:** substituir o input livre em `src/app/features/tournament/tournament.component.html` por `app-select-menu` alimentado pelo catálogo, com rótulos e aliases tratados no domínio.
-- [ ] **T012 [Plan:1.2,1.3]:** atualizar `src/app/features/tournament/tournament.component.ts` e `.html` para selecionar MD1/MD3/MD5 conforme categoria; para gols, mostrar MD1 e indicar que o placar é de gols.
-- [ ] **T013 [Plan:1.2,1.3]:** atualizar criação de etapa/classificação para eliminatória em `src/app/features/tournament/tournament.component.ts` e `src/app/core/tournament-store.service.ts`, permitindo `bestOf: 1` nas duas entradas.
-- [ ] **T014 [Plan:1.1,1.2]:** revisar `src/app/features/tournament/tournament.component.spec.ts` para selecionar cada jogo, validar filtros de formato e garantir que uma etapa receba o jogo/categoria corretos.
+- [x] **T011 [Plan:1.1,1.2]:** substituir o input livre por seleção de catálogo e usar aliases no domínio para reconhecer nomes legados.
+- [x] **T012 [Plan:1.2,1.3]:** disponibilizar MD1/MD2/MD3/MD5 para todos os jogos e categoria de gols com entrada individual por jogo.
+- [x] **T013 [Plan:1.2,1.3]:** permitir MD1 em etapas e na eliminatória, preservando os formatos suportados.
+- [x] **T014 [Plan:1.1,1.2]:** testar catálogo, formatos e seleção de categoria em `tournament.component.spec.ts`.
 
 ### Fase 4 — Operação de partida e exibição
 
-- [ ] **T015 [Plan:1.4,1.7]:** adicionar botão “Iniciar partida” em `src/app/features/admin/admin.component.html` e handler em `.ts`, exibindo estado ao vivo imediatamente em placar 0–0.
-- [ ] **T016 [Plan:1.3,1.4]:** renderizar controles de placar condicionais à categoria em `src/app/features/admin/admin.component.html`: vitórias de série para Clash Royale; gols e campos opcionais de pênaltis para jogos da categoria de gols.
-- [ ] **T017 [Plan:1.4,1.7]:** atualizar mensagens, validação de formulário, correção e histórico em `src/app/features/admin/admin.component.ts`, `.html` e `.spec.ts`; impedir conclusão de empate sem vencedor por pênaltis.
-- [ ] **T018 [Plan:1.4,1.6]:** adaptar `src/app/features/dashboard/dashboard.component.ts`/`.html` e `live-match-card`/`upcoming-match-card` para exibir 0–0 ao vivo e rótulos de gols ou vitórias da série.
-- [ ] **T019 [Plan:1.4,1.6]:** adaptar cards, sumário e histórico do bracket em `src/app/features/brackets/` para mostrar unidade correta do placar, pênaltis e vencedor sem quebrar estados pendentes/bye.
-- [ ] **T020 [Plan:1.4,1.6]:** revisar estatísticas de Dashboard e `calculateTournamentRecords()` para que estatísticas de séries não exibam totais de gols como vitórias de jogos.
+- [x] **T015 [Plan:1.4,1.7]:** adicionar “Iniciar partida” no Admin para definir ao vivo em 0–0.
+- [x] **T016 [Plan:1.3,1.4]:** exibir campos de vitórias da série, gols e pênaltis de acordo com categoria.
+- [x] **T017 [Plan:1.4,1.7]:** validar conclusão e correção; empate de gols requer pênaltis com vencedor.
+- [x] **T018 [Plan:1.4,1.6]:** exibir placares ao vivo e rótulos por categoria no Dashboard.
+- [x] **T019 [Plan:1.4,1.6]:** adaptar card e resumo do bracket para placares por categoria e pênaltis.
+- [x] **T020 [Plan:1.4,1.6]:** não contabilizar gols como vitórias de série nas estatísticas.
 
 ### Fase 5 — Validação ponta a ponta e documentação
 
-- [ ] **T021 [Plan:1.1,1.3,1.4,1.5]:** ampliar `e2e/tournament-flows.spec.ts` com fluxo EA SPORTS FC: selecionar jogo, criar MD1, iniciar 0–0, lançar gols, concluir placar empatado por pênaltis e confirmar exibição/persistência.
-- [ ] **T022 [Plan:1.1,1.2,1.4]:** ampliar E2E para Clash Royale e confirmar seleção do catálogo, opção MD3/MD5 e semântica de vitórias da série.
-- [ ] **T023 [Plan:1.5,1.7]:** adicionar cenário de importação de fixture JSON schema v1, validar preservação dos dados e exportação como v2.
-- [ ] **T024 [Plan:1.1-1.7]:** executar `npm test` e `npm run build`; executar `npm run test:e2e` quando o Chromium estiver disponível e registrar separadamente qualquer limitação ambiental.
-- [ ] **T025 [Plan:1.1-1.7]:** atualizar `README.md` com os jogos/categorias iniciais, formatos disponíveis, regra de pênaltis e comportamento de início ao vivo.
+- [x] **T021 [Plan:1.1,1.3,1.4,1.5]:** adicionar fluxo E2E para início 0–0, gols, desempate por pênaltis e persistência.
+- [x] **T022 [Plan:1.1,1.2,1.4]:** cobrir Clash Royale, formatos MD1/3/5 e semântica de série nos testes unitários da configuração/domínio.
+- [x] **T023 [Plan:1.5,1.7]:** testar importação de JSON v1 e preservação dos resultados durante a migração v2.
+- [x] **T024 [Plan:1.1-1.7]:** executar `npm test` (87 aprovados) e `npm run build` (aprovado). E2E foi escrito, porém não executado com sucesso nesta sessão.
+- [x] **T025 [Plan:1.1-1.7]:** documentar catálogo, categorias, pênaltis e início ao vivo no `README.md`.
 
 ## 7. Critérios de aceite
 
@@ -96,7 +96,7 @@ Este documento é um plano de implementação; nenhuma alteração de código fo
 3. MD1 está disponível; para EA SPORTS FC, o placar registra gols. Um resultado com gols diferentes escolhe vencedor pelo placar; um empate só é concluído quando há placar de pênaltis válido e vencedor.
 4. É possível iniciar partida com 0–0. O status persiste como `in-progress`, aparece como “Ao vivo” nas telas e não conta como resultado concluído nem avança uma chave.
 5. Partidas concluídas contam uma vitória/derrota para classificação; gols e pênaltis não são confundidos com vitórias de série nas estatísticas.
-6. MD3/MD5 continuam funcionando para a categoria de séries; MD1 também funciona nessa categoria como uma partida única.
+6. MD1/MD2/MD3/MD5 funcionam para os jogos do catálogo; categorias de gols armazenam resultados individuais em vez de somar gols como vitórias da série.
 7. Torneios locais e arquivos v1 permanecem acessíveis depois da atualização; um arquivo inválido não apaga/substitui os dados atuais.
 8. Testes unitários cobrem as regras de pontuação e migração; build e testes passam. E2E só é declarado aprovado após execução real com navegador disponível.
 
@@ -115,4 +115,4 @@ Este documento é um plano de implementação; nenhuma alteração de código fo
 
 ## 9. Decisão a confirmar antes da implementação
 
-O plano assume que jogos da categoria de gols usam MD1 nesta primeira entrega. MD3/MD5 continuam para a categoria de vitórias de série. Se também for necessário um torneio MD3/MD5 de EA SPORTS FC, será preciso confirmar que cada confronto representa uma série de até 3/5 partidas e guardar o placar de gols individual de cada jogo; somar os gols das partidas não deve ser usado para determinar o vencedor da série.
+MD2 foi definido como primeira pessoa a duas vitórias, portanto a série pode ter até três jogos. A lista MD1/MD2/MD3/MD5 é uma configuração por jogo no catálogo; para uma modalidade futura, adicione sua opção e mantenha explícita a regra que converte o formato em vitórias necessárias.

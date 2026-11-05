@@ -1,5 +1,5 @@
 <article class="bracket-game" [class.game-live]="match.status === 'in-progress'" [class.game-complete]="match.status === 'completed'" [class.game-bye]="match.status === 'bye'" [attr.aria-label]="'Jogo ' + (matchIndex + 1) + ': ' + playerALabel + ' contra ' + playerBLabel">
-  <div class="bracket-game-topline"><span>JOGO {{ matchIndex + 1 }}</span><span class="bracket-game-state">{{ match.status === 'in-progress' ? 'AO VIVO' : match.status === 'completed' ? 'FINAL' : match.status === 'bye' ? 'BYE' : 'PENDENTE' }}</span></div>
+  <div class="bracket-game-topline"><span>{{ scoreMode === 'goals' ? 'PARTIDA' : 'JOGO' }} {{ matchIndex + 1 }}</span><span class="bracket-game-state">{{ match.status === 'in-progress' ? 'AO VIVO' : match.status === 'completed' ? 'FINAL' : match.status === 'bye' ? 'BYE' : 'PENDENTE' }}</span></div>
   <div class="bracket-game-player" [class.player-winner]="match.winnerId === match.playerAId && match.status !== 'pending' && match.status !== 'in-progress'" [class.player-placeholder]="!match.playerAId">
     <span [title]="playerALabel">{{ playerALabel }}</span><b>{{ match.playerAId ? match.scoreA : '—' }}</b>
   </div>
@@ -7,4 +7,7 @@
     <span [title]="playerBLabel">{{ playerBLabel }}</span><b>{{ match.playerBId ? match.scoreB : '—' }}</b>
   </div>
   @if (match.status === 'bye') { <span class="bracket-bye-note">Avança por bye</span> }
+  @if (scoreMode === 'goals' && match.status === 'in-progress') { <span class="bracket-bye-note">Jogo atual: 0-0</span> }
+  @if (scoreMode === 'goals' && match.gameResults?.length) { <span class="bracket-bye-note">Jogo: {{ gameResultsSummary() }}</span> }
+  @else if (match.penaltyScoreA !== null && match.penaltyScoreA !== undefined && match.penaltyScoreB !== null && match.penaltyScoreB !== undefined) { <span class="bracket-bye-note">Pênaltis {{ match.penaltyScoreA }}-{{ match.penaltyScoreB }}</span> }
 </article>

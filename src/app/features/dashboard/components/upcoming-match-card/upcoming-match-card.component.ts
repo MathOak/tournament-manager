@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { ScoreMode } from '../../../../domain/tournament.model';
 
 @Component({
   selector: 'app-upcoming-match-card',
@@ -9,7 +10,8 @@ import { Component, Input } from '@angular/core';
 export class UpcomingMatchCardComponent {
   @Input() stageName = '';
   @Input() roundName = '';
-  @Input() bestOf: 3 | 5 = 3;
+  @Input() bestOf = 2;
+  @Input() scoreMode: ScoreMode = 'series-wins';
   @Input() playerA = '';
   @Input() playerB = '';
   @Input() recordA = '0V–0D';

@@ -1,6 +1,6 @@
 # Tournament Manager
 
-Aplicação frontend Angular para organizar torneios de diferentes jogos, cadastrar jogadores, gerar etapas suíças ou de eliminação simples e acompanhar partidas MD3/MD5.
+Aplicação frontend Angular para organizar torneios de diferentes jogos, cadastrar jogadores, gerar etapas suíças ou de eliminação simples e acompanhar partidas MD1, MD2, MD3 ou MD5.
 
 ## Requisitos
 
@@ -19,10 +19,16 @@ Na raiz do projeto:
 ## Fluxo do MVP
 
 1. Em **Jogadores**, cadastre os participantes e, opcionalmente, o nick no jogo.
-2. Em **Torneio**, escolha nome, jogo, formato da etapa e MD3 ou MD5. A chave recebe um embaralhamento aleatório dos participantes.
-3. Em **Admin**, registre o placar de cada partida. MD3 exige 2 vitórias e MD5 exige 3.
+2. Em **Torneio**, escolha nome, jogo, formato da etapa e modalidade MD1, MD2, MD3 ou MD5. A chave recebe um embaralhamento aleatório dos participantes.
+3. Em **Admin**, registre o placar de cada partida. MD1 exige 1 vitória; MD2 e MD3 exigem 2; MD5 exige 3.
 4. Em **Dashboard**, acompanhe as chaves, rodadas e classificação do sistema suíço.
 5. Use **Exportar JSON** e **Importar JSON** na página de jogadores para fazer backup ou transferir os dados.
+
+### Jogos e placares
+
+- O jogo é selecionado no catálogo antes da criação de uma etapa. Todos os jogos oferecem MD1, MD2, MD3 e MD5; as opções ficam configuradas no catálogo para permitir futuras modalidades.
+- Clash Royale registra vitórias por série. EA SPORTS FC (FIFA/EAFC) registra gols por jogo; em séries MD2/MD3/MD5, os gols de cada jogo ficam no histórico e a série termina quando alguém alcança o número de vitórias exigido. Empates em um jogo exigem pênaltis diferentes; pênaltis definem o vencedor daquele jogo, sem alterar os gols.
+- No Admin, **Iniciar partida** registra 0–0 como ao vivo. Isso não conta como resultado concluído nem avança uma chave. Torneios locais existentes e JSON schema v1 são migrados ao serem carregados/importados.
 
 ### Modo telão e temas
 
@@ -33,6 +39,12 @@ Na raiz do projeto:
 ### Classificação para a eliminatória
 
 Após concluir todas as rodadas suíças, use **Classificar para eliminatória** na configuração do torneio. Selecione o Top N ou ajuste participantes individualmente; escolha seeds pela classificação, sorteados ou em ordem manual. Empates na linha de corte exigem confirmação explícita. A fase suíça permanece intacta e a nova eliminatória guarda sua origem e seeds.
+
+### Pareamento das etapas
+
+- Na criação de etapas suíças ou de eliminação simples, escolha pareamento automático ou montagem manual. No modo manual, revise os confrontos e confirme antes de criar/iniciar a etapa ou rodada; participantes duplicados ou ausentes são bloqueados.
+- Na eliminação simples, byes automáticos são resolvidos na primeira rodada; a segunda rodada não recebe bye por falta de feeder. No suíço com número ímpar, o bye vale vitória/ponto, não conta como partida jogada e é rotacionado entre quem ainda não recebeu bye.
+- Rodadas suíças manuais só podem ser montadas depois que a rodada anterior estiver concluída. A progressão da eliminatória continua automática após os resultados.
 
 ### Atualização de resultados
 

@@ -1,6 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { applyMatchProgress, applyMatchResult, calculateStandings, createNextSwissRound, createStage, validateMatchProgress, validateMatchResult } from '../domain/tournament-engine';
-import { BestOf, Player, SeedMode, StageFormat, Tournament, createEmptyTournament, createId } from '../domain/tournament.model';
+import { applyGoalGameResult, applyMatchProgress, applyMatchResult, calculateStandings, createManualSwissRound, createNextSwissRound, createStage, replaceGoalGameResult, targetWins, validateEliminationPairings, validateGoalGame, validateMatchProgress, validateMatchResult, validateSwissPairings } from '../domain/tournament-engine';
+import { BestOf, MatchPairing, PairingMode, Player, ScoreMode, SeedMode, StageFormat, Tournament, createEmptyTournament, createId } from '../domain/tournament.model';
+import { gameById, gameForLegacyName } from '../domain/game-catalog';
 
 const DATABASE_NAME = 'tournament-manager';
 const STORE_NAME = 'documents';
@@ -29,14 +30,26 @@ export class TournamentStore {
     this.initialize();
   }
 
-  updateTournamentDetails(name: string, game: string): void {
+  updateTournamentDetails(name: string, game: string): boolean {
     const cleanName = name.trim();
-    const cleanGame = game.trim();
-    if (!cleanName || !cleanGame) {
-      this.notice.set('Informe o nome do torneio e do jogo.');
-      return;
+    const selectedGame = gameById(game) ?? gameForLegacyName(game);
+    const current = this.state();
+    const keepLegacyGame = current.stages.length > 0 && !current.gameId && current.game === game.trim();
+    if (!cleanName || (!selectedGame && !keepLegacyGame)) {
+      this.notice.set('Informe o nome do torneio e selecione um jogo da lista.');
+      return false;
     }
-    this.commit((current) => ({ ...current, name: cleanName, game: cleanGame }));
+    if (current.stages.length && current.gameId && current.game !== selectedGame?.label) {
+      this.notice.set('Não é possível trocar o jogo depois que etapas foram criadas.');
+      return false;
+    }
+    this.commit((tournament) => ({
+      ...tournament,
+      name: cleanName,
+      game: selectedGame?.label ?? tournament.game,
+      gameId: selectedGame?.id ?? tournament.gameId,
+    }));
+    return true;
   }
 
   createTournament(): Tournament {
@@ -44,6 +57,7 @@ export class TournamentStore {
     const suffix = this.tournaments().length + 1;
     tournament.name = `Meu torneio ${suffix}`;
     tournament.game = '';
+    tournament.gameId = undefined;
     this.tournaments.update((items) => [...items, tournament]);
     this.state.set(tournament);
     this.selectedTournamentId.set(tournament.id);
@@ -99,18 +113,44 @@ export class TournamentStore {
     this.commit((tournament) => ({ ...tournament, players: tournament.players.filter((player) => player.id !== playerId) }));
   }
 
-  addStage(format: StageFormat, bestOf: BestOf, rounds: number): boolean {
+  addStage(format: StageFormat, bestOf: BestOf, rounds: number, pairingMode: PairingMode = 'automatic', initialPairings?: MatchPairing[]): boolean {
     const current = this.state();
+    const game = gameById(current.gameId) ?? gameForLegacyName(current.game);
+    if (!game) {
+      this.notice.set('Selecione um jogo compatível antes de criar uma etapa.');
+      return false;
+    }
+    if (!game.bestOfOptions.includes(bestOf)) {
+      this.notice.set(`O jogo ${game.label} não oferece o formato MD${bestOf}.`);
+      return false;
+    }
     if (current.players.length < 2) {
       this.notice.set('Cadastre pelo menos dois jogadores antes de criar uma chave.');
       return false;
     }
-    const stage = createStage(current.players, format, bestOf, rounds);
+    if (pairingMode === 'manual') {
+      const error = format === 'single-elimination'
+        ? validateEliminationPairings(current.players.map((player) => player.id), initialPairings ?? [])
+        : validateSwissPairings({
+            id: 'draft', name: 'Rascunho suíço', format: 'swiss', bestOf, scoreMode: game.category,
+            pairingMode, status: 'ready', rounds: [], totalRounds: Math.max(1, rounds),
+            participantIds: current.players.map((player) => player.id),
+          }, current.players, initialPairings ?? []);
+      if (error) {
+        this.notice.set(error);
+        return false;
+      }
+    }
+    const stage = createStage(current.players, format, bestOf, rounds, undefined, {
+      scoreMode: game.category,
+      pairingMode,
+      ...(pairingMode === 'manual' ? { initialPairings } : {}),
+    });
     this.commit((tournament) => ({ ...tournament, stages: [...tournament.stages, stage] }));
     return true;
   }
 
-  createEliminationFromSwiss(sourceStageId: string, selectedIds: string[], seedMode: SeedMode, manualOrder: string[], bestOf: BestOf): boolean {
+  createEliminationFromSwiss(sourceStageId: string, selectedIds: string[], seedMode: SeedMode, manualOrder: string[], bestOf: BestOf, pairingMode: PairingMode = 'automatic', initialPairings?: MatchPairing[]): boolean {
     const tournament = this.state();
     const source = tournament.stages.find((stage) => stage.id === sourceStageId && stage.format === 'swiss');
     if (!source || source.rounds.length < source.totalRounds || source.rounds.some((round) => round.matches.some((match) => match.status === 'pending' || match.status === 'in-progress'))) {
@@ -122,6 +162,13 @@ export class TournamentStore {
     if (qualified.length < 2) {
       this.notice.set('Selecione pelo menos dois classificados para a eliminatória.');
       return false;
+    }
+    if (pairingMode === 'manual') {
+      const error = validateEliminationPairings(qualified.map((player) => player.id), initialPairings ?? []);
+      if (error) {
+        this.notice.set(error);
+        return false;
+      }
     }
     let seedOrder: string[] | undefined;
     if (seedMode === 'standings') {
@@ -138,6 +185,9 @@ export class TournamentStore {
       ...(seedOrder ? { seedOrder } : {}),
       sourceStageId,
       seedMode,
+      scoreMode: source.scoreMode ?? 'series-wins',
+      pairingMode,
+      ...(pairingMode === 'manual' ? { initialPairings } : {}),
     });
     this.commit((current) => ({ ...current, stages: [...current.stages, stage] }));
     return true;
@@ -153,6 +203,10 @@ export class TournamentStore {
   startNextSwissRound(stageId: string): boolean {
     const current = this.state();
     const stage = current.stages.find((item) => item.id === stageId);
+    if (stage?.pairingMode === 'manual') {
+      this.notice.set('Esta etapa usa pareamento manual. Monte e confirme os confrontos da próxima rodada.');
+      return false;
+    }
     if (!stage || stage.format !== 'swiss' || stage.rounds.some((round) => round.matches.some((match) => match.status === 'pending' || match.status === 'in-progress'))) {
       this.notice.set('Conclua todas as partidas da rodada atual antes de gerar a próxima.');
       return false;
@@ -169,17 +223,88 @@ export class TournamentStore {
     return true;
   }
 
-  updateMatch(stageId: string, roundNumber: number, matchId: string, scoreA: number, scoreB: number): boolean {
+  startManualSwissRound(stageId: string, pairings: MatchPairing[]): boolean {
+    const current = this.state();
+    const stage = current.stages.find((item) => item.id === stageId);
+    if (!stage || stage.format !== 'swiss' || stage.rounds.length >= stage.totalRounds ||
+        stage.rounds.some((round) => round.matches.some((match) => match.status === 'pending' || match.status === 'in-progress'))) {
+      this.notice.set('Conclua todas as partidas da rodada atual antes de configurar a próxima.');
+      return false;
+    }
+    const round = createManualSwissRound(stage, current.players, pairings);
+    if (!round) {
+      this.notice.set(validateSwissPairings(stage, current.players, pairings) ?? 'Não foi possível criar a rodada manual.');
+      return false;
+    }
+    this.commit((tournament) => ({
+      ...tournament,
+      stages: tournament.stages.map((item) => item.id === stageId
+        ? { ...item, pairingMode: 'manual' as const, status: 'in-progress' as const, rounds: [...item.rounds, round] }
+        : item),
+    }));
+    return true;
+  }
+
+  updateMatch(stageId: string, roundNumber: number, matchId: string, scoreA: number, scoreB: number, penaltyScoreA: number | null = null, penaltyScoreB: number | null = null): boolean {
     const current = this.state();
     const stage = current.stages.find((item) => item.id === stageId);
     const match = stage?.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
     if (!stage || !match) return false;
-    const result = validateMatchResult(match, stage.bestOf, scoreA, scoreB);
+    const result = validateMatchResult(match, stage.bestOf, scoreA, scoreB, stage.scoreMode ?? 'series-wins', penaltyScoreA, penaltyScoreB);
     if (!result) {
-      this.notice.set(`Placar inválido. Em MD${stage.bestOf}, alguém precisa alcançar ${stage.bestOf === 3 ? 2 : 3} vitórias.`);
+      this.notice.set(stage.scoreMode === 'goals'
+        ? 'Resultado inválido. Informe gols diferentes ou, em caso de empate, um placar de pênaltis que defina o vencedor.'
+        : `Placar inválido. Em MD${stage.bestOf}, alguém precisa alcançar ${stage.bestOf === 1 ? 1 : stage.bestOf === 5 ? 3 : 2} vitória(s).`);
       return false;
     }
     const updatedStage = applyMatchResult(stage, roundNumber, matchId, result);
+    this.commit((tournament) => ({
+      ...tournament,
+      stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
+    }));
+    return true;
+  }
+
+  recordGoalGame(stageId: string, roundNumber: number, matchId: string, scoreA: number, scoreB: number, penaltyScoreA: number | null = null, penaltyScoreB: number | null = null): boolean {
+    const current = this.state();
+    const stage = current.stages.find((item) => item.id === stageId);
+    const match = stage?.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+    if (!stage || stage.scoreMode !== 'goals' || !match || match.status === 'completed' || match.status === 'bye') {
+      this.notice.set('Esta partida não aceita um novo resultado de gols.');
+      return false;
+    }
+    const maxGames = targetWins(stage.bestOf) * 2 - 1;
+    if ((match.gameResults?.length ?? 0) >= maxGames) {
+      this.notice.set('A série já atingiu o limite de partidas permitido.');
+      return false;
+    }
+    const result = validateGoalGame(match, scoreA, scoreB, penaltyScoreA, penaltyScoreB);
+    if (!result) {
+      this.notice.set('Resultado inválido. Informe gols diferentes ou, em caso de empate, pênaltis que definam o vencedor.');
+      return false;
+    }
+    const updatedStage = applyGoalGameResult(stage, roundNumber, matchId, result);
+    this.commit((tournament) => ({
+      ...tournament,
+      stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
+    }));
+    return true;
+  }
+
+  correctGoalGame(stageId: string, roundNumber: number, matchId: string, gameIndex: number, scoreA: number, scoreB: number, penaltyScoreA: number | null = null, penaltyScoreB: number | null = null): boolean {
+    const current = this.state();
+    const stage = current.stages.find((item) => item.id === stageId);
+    const match = stage?.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+    if (!stage || stage.scoreMode !== 'goals' || !match || match.status !== 'completed') {
+      this.notice.set('Somente uma série de gols concluída pode ter seu jogo corrigido.');
+      return false;
+    }
+    const result = validateGoalGame(match, scoreA, scoreB, penaltyScoreA, penaltyScoreB);
+    if (!result || gameIndex < 0 || gameIndex >= (match.gameResults?.length ?? 0)) {
+      this.notice.set('Resultado inválido para corrigir o jogo.');
+      return false;
+    }
+    const updatedStage = replaceGoalGameResult(stage, roundNumber, matchId, gameIndex, result);
     this.commit((tournament) => ({
       ...tournament,
       stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
@@ -191,11 +316,27 @@ export class TournamentStore {
     const current = this.state();
     const stage = current.stages.find((item) => item.id === stageId);
     const match = stage?.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
-    if (!stage || !match || match.status === 'completed' || !validateMatchProgress(match, stage.bestOf, scoreA, scoreB)) {
+    if (!stage || !match || match.status === 'completed' || !validateMatchProgress(match, stage.bestOf, scoreA, scoreB, stage.scoreMode ?? 'series-wins')) {
       this.notice.set('Placar parcial inválido. Não confirme uma série encerrada como parcial.');
       return false;
     }
     const updatedStage = applyMatchProgress(stage, roundNumber, matchId, scoreA, scoreB);
+    this.commit((tournament) => ({
+      ...tournament,
+      stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
+    }));
+    return true;
+  }
+
+  startMatch(stageId: string, roundNumber: number, matchId: string): boolean {
+    const current = this.state();
+    const stage = current.stages.find((item) => item.id === stageId);
+    const match = stage?.rounds.find((round) => round.number === roundNumber)?.matches.find((item) => item.id === matchId);
+    if (!stage || !match || match.status !== 'pending' || !match.playerAId || !match.playerBId) {
+      this.notice.set('Só é possível iniciar uma partida pendente com dois participantes definidos.');
+      return false;
+    }
+    const updatedStage = applyMatchProgress(stage, roundNumber, matchId, 0, 0);
     this.commit((tournament) => ({
       ...tournament,
       stages: tournament.stages.map((item) => item.id === stageId ? updatedStage : item),
@@ -210,16 +351,18 @@ export class TournamentStore {
   importJson(json: string, replaceExisting = false): boolean {
     try {
       const parsed: unknown = JSON.parse(json);
-      if (!isTournament(parsed)) throw new Error('Formato inválido');
-      const duplicate = this.tournaments().some((item) => item.id === parsed.id);
+      const migrated = migrateTournament(parsed);
+      if (!migrated) throw new Error('Formato inválido');
+      const imported: Tournament = migrated;
+      const duplicate = this.tournaments().some((item) => item.id === imported.id);
       const replaceDuplicate = duplicate && replaceExisting;
-      if (duplicate && !replaceDuplicate) parsed.id = createId();
-      parsed.updatedAt = new Date().toISOString();
+      if (duplicate && !replaceDuplicate) imported.id = createId();
+      imported.updatedAt = new Date().toISOString();
       this.tournaments.update((items) => replaceDuplicate
-        ? items.map((item) => item.id === parsed.id ? parsed : item)
-        : [...items, parsed]);
-      this.state.set(parsed);
-      this.selectedTournamentId.set(parsed.id);
+        ? items.map((item) => item.id === imported.id ? imported : item)
+        : [...items, imported]);
+      this.state.set(imported);
+      this.selectedTournamentId.set(imported.id);
       this.notice.set('Torneio importado com sucesso.');
       void this.persistCollection();
       return true;
@@ -265,7 +408,7 @@ export class TournamentStore {
   private async load(): Promise<void> {
     try {
       const values = await this.readAllFromDatabase();
-      let tournaments = uniqueTournaments(values.filter(isTournament));
+      let tournaments = uniqueTournaments(values.map(migrateTournament).filter((item): item is Tournament => !!item));
       let selectedId = await this.readSelectedId();
       if (!tournaments.length) {
         const fallback = this.readFallbackCollection();
@@ -368,22 +511,35 @@ export class TournamentStore {
     try {
       const rawCollection = localStorage.getItem(LOCAL_COLLECTION_KEY);
       const parsedCollection: unknown = rawCollection ? JSON.parse(rawCollection) : [];
-      const tournaments = Array.isArray(parsedCollection) ? uniqueTournaments(parsedCollection.filter(isTournament)) : [];
+      const tournaments = Array.isArray(parsedCollection) ? uniqueTournaments(parsedCollection.map(migrateTournament).filter((item): item is Tournament => !!item)) : [];
       if (tournaments.length) return { tournaments, selectedId: localStorage.getItem(LOCAL_SELECTED_KEY) ?? '' };
       const rawLegacy = localStorage.getItem(LOCAL_FALLBACK_KEY);
       const legacy: unknown = rawLegacy ? JSON.parse(rawLegacy) : null;
-      return { tournaments: isTournament(legacy) ? [legacy] : [], selectedId: isTournament(legacy) ? legacy.id : '' };
+      const migratedLegacy = migrateTournament(legacy);
+      return { tournaments: migratedLegacy ? [migratedLegacy] : [], selectedId: migratedLegacy?.id ?? '' };
     } catch {
       return { tournaments: [], selectedId: '' };
     }
   }
 }
 
+function migrateTournament(value: unknown): Tournament | null {
+  if (!isTournament(value)) return null;
+  const game = gameForLegacyName(value.game);
+  return {
+    ...value,
+    schemaVersion: 2,
+    gameId: value.gameId ?? game?.id,
+    stages: value.stages.map((stage) => ({ ...stage, scoreMode: stage.scoreMode ?? 'series-wins' })),
+  };
+}
+
 function isTournament(value: unknown): value is Tournament {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<Tournament>;
-  return candidate.schemaVersion === 1 && typeof candidate.id === 'string' &&
+  return (candidate.schemaVersion === 1 || candidate.schemaVersion === 2) && typeof candidate.id === 'string' &&
     typeof candidate.name === 'string' && typeof candidate.game === 'string' &&
+    (candidate.gameId === undefined || candidate.gameId === 'clash-royale' || candidate.gameId === 'ea-sports-fc') &&
     typeof candidate.createdAt === 'string' && typeof candidate.updatedAt === 'string' &&
     Array.isArray(candidate.players) && Array.isArray(candidate.stages) &&
     candidate.players.every((player) => typeof player.id === 'string' && typeof player.displayName === 'string') &&
@@ -392,16 +548,38 @@ function isTournament(value: unknown): value is Tournament {
       const item = stage as Partial<Tournament['stages'][number]>;
       return typeof item.id === 'string' && typeof item.name === 'string' &&
         (item.format === 'swiss' || item.format === 'single-elimination') &&
-        (item.bestOf === 3 || item.bestOf === 5) && Array.isArray(item.rounds) &&
+        (item.pairingMode === undefined || item.pairingMode === 'automatic' || item.pairingMode === 'manual') &&
+        typeof item.bestOf === 'number' && Number.isInteger(item.bestOf) && item.bestOf > 0 && item.bestOf <= 15 && Array.isArray(item.rounds) &&
+        (item.scoreMode === undefined || item.scoreMode === 'series-wins' || item.scoreMode === 'goals') &&
+        (item.scoreMode !== 'goals' || item.bestOf === 1) &&
         item.rounds.every((round) => !!round && typeof round.id === 'string' &&
           Number.isInteger(round.number) && Array.isArray(round.matches) &&
+          (round.pairingMode === undefined || round.pairingMode === 'automatic' || round.pairingMode === 'manual') &&
           round.matches.every((match) => !!match && typeof match.id === 'string' &&
             (match.playerAId === null || typeof match.playerAId === 'string') &&
             (match.playerBId === null || typeof match.playerBId === 'string') &&
             Number.isInteger(match.scoreA) && Number.isInteger(match.scoreB) &&
+            (match.penaltyScoreA === undefined || match.penaltyScoreA === null || Number.isInteger(match.penaltyScoreA)) &&
+            (match.penaltyScoreB === undefined || match.penaltyScoreB === null || Number.isInteger(match.penaltyScoreB)) &&
+            ((match.penaltyScoreA === undefined || match.penaltyScoreA === null) === (match.penaltyScoreB === undefined || match.penaltyScoreB === null)) &&
+            (match.gameResults === undefined || (Array.isArray(match.gameResults) && match.gameResults.every((game) => isValidGameResult(game, match.playerAId, match.playerBId)))) &&
             (match.winnerId === null || typeof match.winnerId === 'string') &&
             (match.status === 'pending' || match.status === 'in-progress' || match.status === 'completed' || match.status === 'bye')));
     });
+}
+
+function isValidGameResult(value: unknown, playerAId: string | null, playerBId: string | null): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const game = value as { scoreA?: unknown; scoreB?: unknown; penaltyScoreA?: unknown; penaltyScoreB?: unknown; winnerId?: unknown };
+  const hasPenaltyA = game.penaltyScoreA !== undefined && game.penaltyScoreA !== null;
+  const hasPenaltyB = game.penaltyScoreB !== undefined && game.penaltyScoreB !== null;
+  if (!Number.isInteger(game.scoreA) || !Number.isInteger(game.scoreB) || (game.scoreA as number) < 0 || (game.scoreB as number) < 0 ||
+      (typeof game.winnerId !== 'string' || (game.winnerId !== playerAId && game.winnerId !== playerBId)) || hasPenaltyA !== hasPenaltyB) return false;
+  if (!hasPenaltyA) return game.scoreA !== game.scoreB && game.winnerId === ((game.scoreA as number) > (game.scoreB as number) ? playerAId : playerBId);
+  return Number.isInteger(game.penaltyScoreA) && Number.isInteger(game.penaltyScoreB) &&
+    (game.penaltyScoreA as number) >= 0 && (game.penaltyScoreB as number) >= 0 && game.scoreA === game.scoreB &&
+    game.penaltyScoreA !== game.penaltyScoreB &&
+    game.winnerId === ((game.penaltyScoreA as number) > (game.penaltyScoreB as number) ? playerAId : playerBId);
 }
 
 function uniqueTournaments(tournaments: Tournament[]): Tournament[] {

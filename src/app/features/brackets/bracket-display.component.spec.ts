@@ -61,7 +61,7 @@ describe('BracketDisplayComponent', () => {
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('app-select-menu .select-trigger')?.textContent).toContain('Copa de Teste');
+    expect(element.querySelector('.bracket-event-summary')?.textContent).toContain('Copa de Teste');
     expect(element.querySelectorAll('app-bracket-round-column')).toHaveLength(2);
     expect(element.querySelectorAll('.bracket-game')).toHaveLength(3);
     expect(element.querySelector('.bracket-connectors path')).toBeTruthy();

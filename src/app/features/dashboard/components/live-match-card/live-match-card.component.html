@@ -1,8 +1,11 @@
 <article class="live-match-card is-live">
-  <div class="live-card-meta"><span class="live-chip"><i></i> AO VIVO</span><span>{{ stageName }} · {{ roundName }} · MD{{ bestOf }}</span></div>
+  <div class="live-card-meta"><span class="live-chip"><i></i> AO VIVO</span><span>{{ stageName }} · {{ roundName }} · {{ scoreMode === 'goals' ? 'Gols' : 'MD' + bestOf }}</span></div>
   <div class="versus-board">
     <div class="contestant contestant-a"><span class="contestant-record">{{ recordA }}</span><strong>{{ playerA }}</strong><small>RETROSPECTO NO TORNEIO</small></div>
-    <div class="series-score"><strong>{{ scoreA }}</strong><span>:</span><strong>{{ scoreB }}</strong><small>SÉRIE MD{{ bestOf }}</small></div>
+    <div class="series-score"><strong>{{ scoreA }}</strong><span>:</span><strong>{{ scoreB }}</strong><small>{{ scoreMode === 'goals' ? 'VITÓRIAS · MD' + bestOf : 'SÉRIE MD' + bestOf }}</small></div>
     <div class="contestant contestant-b"><span class="contestant-record">{{ recordB }}</span><strong>{{ playerB }}</strong><small>RETROSPECTO NO TORNEIO</small></div>
   </div>
+  @if (scoreMode === 'goals') { <small class="penalty-score">Placar do jogo atual: 0–0</small> }
+  @if (scoreMode === 'goals' && gameResults.length) { <small class="penalty-score">Gols por partida: {{ gameResultsSummary() }}</small> }
+  @if (penaltyScoreA !== null && penaltyScoreB !== null) { <small class="penalty-score">Pênaltis: {{ penaltyScoreA }}–{{ penaltyScoreB }}</small> }
 </article>

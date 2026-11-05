@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { APP_CONFIG } from '../../../core/app-config';
 
 @Component({
   selector: 'app-footer',
@@ -6,4 +7,6 @@ import { Component } from '@angular/core';
   templateUrl: './app-footer.component.html',
   styleUrl: './app-footer.component.css',
 })
-export class AppFooterComponent {}
+export class AppFooterComponent {
+  readonly config = inject(APP_CONFIG);
+}

@@ -1,5 +1,5 @@
 <header class="topbar">
-  <a class="brand" routerLink="/" aria-label="Tournament Manager — início"><span class="brand-mark">TM</span><span>Tournament<span class="brand-light">Manager</span></span></a>
+  <a class="brand" routerLink="/" [attr.aria-label]="config.eventName + ' — início'"><span class="brand-mark">{{ config.eventShortName }}</span><span>{{ config.eventNameParts[0] }} <span class="brand-light">{{ config.eventNameParts[1] }}</span></span></a>
   <nav class="main-nav" aria-label="Navegação principal">
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
     <a routerLink="/players" routerLinkActive="active">Jogadores</a>

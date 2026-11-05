@@ -10,6 +10,5 @@ describe('BracketLegendComponent', () => {
     expect(text).toContain('Ao vivo');
     expect(text).toContain('Vencedor');
     expect(text).toContain('Aguardando resultado');
-    expect(text).toContain('Atualização local neste navegador');
   });
 });

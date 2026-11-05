@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { APP_CONFIG } from '../../../core/app-config';
 
 @Component({
   selector: 'app-header',
@@ -9,6 +10,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrl: './app-header.component.css',
 })
 export class AppHeaderComponent {
+  readonly config = inject(APP_CONFIG);
   @Input({ required: true }) theme: 'dark' | 'light' = 'dark';
   @Output() readonly themeToggle = new EventEmitter<void>();
 }
